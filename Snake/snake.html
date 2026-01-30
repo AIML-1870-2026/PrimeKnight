@@ -296,6 +296,10 @@
                 Feast
                 <div class="mode-desc">5 apples at once</div>
             </button>
+            <button class="mode-btn" data-mode="3d-feast">
+                3D Feast
+                <div class="mode-desc">5 layers + 5 apples</div>
+            </button>
             <div class="controls-info">
                 <h3>Controls</h3>
                 Move: Arrow Keys or WASD<br>
@@ -450,7 +454,7 @@
                     }
 
                     // Layer switching (3D mode)
-                    if (this.gameMode === '3d') {
+                    if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                         if ((e.key === 'q' || e.key === 'Q' || e.key === 'j' || e.key === 'J') && this.currentLayer > 0) {
                             this.currentLayer--;
                             this.createLayerSwitchEffect();
@@ -497,7 +501,7 @@
 
                 // Initialize and spawn food
                 this.foods = [];
-                const foodCount = mode === 'feast' ? 5 : 1;
+                const foodCount = (mode === 'feast' || mode === '3d-feast') ? 5 : 1;
                 for (let i = 0; i < foodCount; i++) {
                     this.spawnFood();
                 }
@@ -509,7 +513,7 @@
                 // Apply 3D tilt for 3D mode
                 const container = document.getElementById('gameContainer');
                 const layerIndicator = document.getElementById('layerIndicator');
-                if (mode === '3d') {
+                if ((mode === '3d' || mode === '3d-feast')) {
                     container.classList.add('mode-3d');
                     layerIndicator.classList.remove('hidden');
                     this.updateLayerIndicator();
@@ -596,7 +600,7 @@
                 if (!hasInvincibility && this.gameMode !== 'zen') {
                     for (let i = 0; i < this.snake.length; i++) {
                         const segment = this.snake[i];
-                        if (this.gameMode === '3d') {
+                        if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                             // Only check collision on same layer
                             if (segment.x === head.x && segment.y === head.y && segment.layer === head.layer) {
                                 this.endGame();
@@ -617,7 +621,7 @@
                 let eatenFoodIndex = -1;
                 for (let i = 0; i < this.foods.length; i++) {
                     const food = this.foods[i];
-                    if (this.gameMode === '3d') {
+                    if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                         if (head.x === food.x && head.y === food.y && head.layer === food.layer) {
                             eatenFoodIndex = i;
                             break;
@@ -656,7 +660,7 @@
                 // Powerup collision
                 if (this.powerup) {
                     let gotPowerup = false;
-                    if (this.gameMode === '3d') {
+                    if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                         gotPowerup = head.x === this.powerup.x && head.y === this.powerup.y && head.layer === this.powerup.layer;
                     } else {
                         gotPowerup = head.x === this.powerup.x && head.y === this.powerup.y;
@@ -673,7 +677,7 @@
                 do {
                     x = Math.floor(Math.random() * CONFIG.gridSize);
                     y = Math.floor(Math.random() * CONFIG.gridSize);
-                    layer = this.gameMode === '3d' ? Math.floor(Math.random() * 5) : this.currentLayer;
+                    layer = (this.gameMode === '3d' || this.gameMode === '3d-feast') ? Math.floor(Math.random() * 5) : this.currentLayer;
                 } while (
                     this.snake.some(s => s.x === x && s.y === y && s.layer === layer) ||
                     this.foods.some(f => f.x === x && f.y === y && f.layer === layer)
@@ -681,7 +685,7 @@
 
                 this.foods.push({ x, y, layer });
 
-                if (this.gameMode === '3d') {
+                if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                     this.updateLayerIndicator();
                 }
             }
@@ -694,7 +698,7 @@
                 do {
                     x = Math.floor(Math.random() * CONFIG.gridSize);
                     y = Math.floor(Math.random() * CONFIG.gridSize);
-                    layer = this.gameMode === '3d' ? Math.floor(Math.random() * 5) : this.currentLayer;
+                    layer = (this.gameMode === '3d' || this.gameMode === '3d-feast') ? Math.floor(Math.random() * 5) : this.currentLayer;
                 } while (
                     this.snake.some(s => s.x === x && s.y === y && s.layer === layer) ||
                     this.foods.some(f => f.x === x && f.y === y && f.layer === layer)
@@ -833,7 +837,7 @@
                 }
 
                 // 3D Mode: Draw all layers with depth effects
-                if (this.gameMode === '3d') {
+                if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                     // Draw layers from back to front (furthest first)
                     const layerOrder = [];
                     for (let i = 0; i < 5; i++) {
@@ -955,7 +959,7 @@
 
                     // Use layer color in 3D mode
                     let color1, color2;
-                    if (this.gameMode === '3d') {
+                    if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                         const layerColor = LAYER_COLORS[this.currentLayer];
                         color1 = layerColor.main;
                         color2 = layerColor.light;
@@ -1009,7 +1013,7 @@
                 });
 
                 // Draw layer transition flash
-                if (this.gameMode === '3d' && this.layerFlash > 0) {
+                if ((this.gameMode === '3d' || this.gameMode === '3d-feast') && this.layerFlash > 0) {
                     const layerColor = LAYER_COLORS[this.currentLayer].main;
                     ctx.fillStyle = layerColor;
                     ctx.globalAlpha = this.layerFlash * 0.3;
@@ -1030,7 +1034,8 @@
                     'survival': 'Survival Mode',
                     'zen': 'Zen Mode',
                     '3d': '3D Mode',
-                    'feast': 'Feast Mode'
+                    'feast': 'Feast Mode',
+                    '3d-feast': '3D Feast Mode'
                 };
                 document.getElementById('modeDisplay').textContent = modeNames[this.gameMode] || '';
 
@@ -1045,7 +1050,7 @@
 
                 // Layer display
                 const layerDisplay = document.getElementById('layerDisplay');
-                if (this.gameMode === '3d') {
+                if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
                     layerDisplay.textContent = `Layer: ${this.currentLayer + 1}/5`;
                     layerDisplay.style.display = 'block';
                 } else {
@@ -1117,7 +1122,8 @@
                     'survival': 'Survival Mode',
                     'zen': 'Zen Mode',
                     '3d': '3D Mode',
-                    'feast': 'Feast Mode'
+                    'feast': 'Feast Mode',
+                    '3d-feast': '3D Feast Mode'
                 };
                 document.getElementById('modePlayedDisplay').textContent = modeNames[this.gameMode];
                 document.getElementById('gameOverOverlay').classList.remove('hidden');
