@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Mesh - 3D Node Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #00ffc8;
+            --bg-color: #0a0a0f;
+            --text-color: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .title-overlay {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .title-overlay h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-color), #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.3rem;
+            text-shadow: 0 0 30px rgba(0, 255, 200, 0.3);
+        }
+
+        .corner-bracket {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--primary-color);
+            opacity: 0.4;
+        }
+
+        .corner-bracket.top-left {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-bracket.top-right {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .control-panel {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            min-width: 320px;
+            box-shadow: 0 8px 32px rgba(0, 255, 200, 0.1);
+            z-index: 10;
+        }
+
+        .control-panel h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            letter-spacing: 0.15rem;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.05rem;
+        }
+
+        .control-group .value-display {
+            float: right;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 200, 0.6);
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 255, 200, 0.6);
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(0, 255, 200, 0.8);
+        }
+
+        .stats-bar {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            display: flex;
+            gap: 30px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px 30px;
+            z-index: 10;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 5px;
+            letter-spacing: 0.1rem;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .glow-line {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+            box-shadow: 0 0 20px var(--primary-color);
+            opacity: 0.6;
+        }
+
+        .pulsing-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--primary-color);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .pulsing-dot.dot-1 {
+            top: 60px;
+            right: 60px;
+        }
+
+        .pulsing-dot.dot-2 {
+            bottom: 60px;
+            right: 420px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                right: 20px;
+                left: 20px;
+                min-width: auto;
+            }
+
+            .title-overlay h1 {
+                font-size: 2rem;
+            }
+
+            .stats-bar {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="corner-bracket top-left"></div>
+    <div class="corner-bracket top-right"></div>
+
+    <div class="title-overlay">
+        <h1>NEURAL MESH</h1>
+    </div>
+
+    <div class="control-panel">
+        <h2>Controls</h2>
+
+        <div class="control-group">
+            <label>
+                Node Count
+                <span class="value-display" id="nodeCountValue">80</span>
+            </label>
+            <input type="range" id="nodeCount" min="10" max="200" value="80" step="1">
+        </div>
+
+        <div class="control-group">
+            <label>
+                Node Speed
+                <span class="value-display" id="nodeSpeedValue">1.0</span>
+            </label>
+            <input type="range" id="nodeSpeed" min="0" max="3" value="1.0" step="0.1">
+        </div>
+
+        <div class="control-group">
+            <label>
+                Connect Radius
+                <span class="value-display" id="connectRadiusValue">120</span>
+            </label>
+            <input type="range" id="connectRadius" min="30" max="250" value="120" step="5">
+        </div>
+
+        <div class="control-group">
+            <label>
+                Node Size
+                <span class="value-display" id="nodeSizeValue">3.0</span>
+            </label>
+            <input type="range" id="nodeSize" min="1" max="8" value="3.0" step="0.5">
+        </div>
+
+        <div class="control-group">
+            <label>
+                Edge Thickness
+                <span class="value-display" id="edgeThicknessValue">1.0</span>
+            </label>
+            <input type="range" id="edgeThickness" min="0.5" max="4" value="1.0" step="0.5">
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-label">Nodes</div>
+            <div class="stat-value" id="activeNodes">80</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Connections</div>
+            <div class="stat-value" id="connections">0</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">FPS</div>
+            <div class="stat-value" id="fps">60</div>
+        </div>
+    </div>
+
+    <div class="glow-line"></div>
+    <div class="pulsing-dot dot-1"></div>
+    <div class="pulsing-dot dot-2"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Configuration
+        let config = {
+            nodeCount: 80,
+            nodeSpeed: 1.0,
+            connectRadius: 120,
+            nodeSize: 3.0,
+            edgeThickness: 1.0
+        };
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 400;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x0a0a0f, 1);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Node class
+        class Node {
+            constructor() {
+                this.position = new THREE.Vector3(
+                    (Math.random() - 0.5) * 600,
+                    (Math.random() - 0.5) * 600,
+                    (Math.random() - 0.5) * 600
+                );
+                this.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 2
+                );
+            }
+
+            update(speed) {
+                this.position.x += this.velocity.x * speed;
+                this.position.y += this.velocity.y * speed;
+                this.position.z += this.velocity.z * speed;
+
+                // Bounce off boundaries
+                const boundary = 300;
+                if (Math.abs(this.position.x) > boundary) {
+                    this.velocity.x *= -1;
+                    this.position.x = Math.sign(this.position.x) * boundary;
+                }
+                if (Math.abs(this.position.y) > boundary) {
+                    this.velocity.y *= -1;
+                    this.position.y = Math.sign(this.position.y) * boundary;
+                }
+                if (Math.abs(this.position.z) > boundary) {
+                    this.velocity.z *= -1;
+                    this.position.z = Math.sign(this.position.z) * boundary;
+                }
+            }
+        }
+
+        // Create nodes and meshes
+        let nodes = [];
+        let nodeMeshes = [];
+        const nodeGroup = new THREE.Group();
+        scene.add(nodeGroup);
+
+        function createNodeMesh() {
+            const geometry = new THREE.SphereGeometry(1, 16, 16);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00ffc8,
+                transparent: true,
+                opacity: 0.8
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Add glow mesh
+            const glowGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffc8,
+                transparent: true,
+                opacity: 0.2
+            });
+            const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+            mesh.add(glowMesh);
+
+            return mesh;
+        }
+
+        function initNodes() {
+            // Remove existing meshes
+            nodeMeshes.forEach(mesh => nodeGroup.remove(mesh));
+            nodes = [];
+            nodeMeshes = [];
+
+            // Create new nodes
+            for (let i = 0; i < config.nodeCount; i++) {
+                nodes.push(new Node());
+                const mesh = createNodeMesh();
+                nodeMeshes.push(mesh);
+                nodeGroup.add(mesh);
+            }
+        }
+
+        // Edge system
+        let edgeGeometry, edgeMaterial, edgeMesh;
+
+        function initEdges() {
+            if (edgeMesh) nodeGroup.remove(edgeMesh);
+
+            edgeGeometry = new THREE.BufferGeometry();
+            edgeMaterial = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true
+            });
+            edgeMesh = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+            nodeGroup.add(edgeMesh);
+        }
+
+        function updateEdges() {
+            const positions = [];
+            const colors = [];
+            let connectionCount = 0;
+
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const distance = nodes[i].position.distanceTo(nodes[j].position);
+
+                    if (distance < config.connectRadius) {
+                        positions.push(
+                            nodes[i].position.x, nodes[i].position.y, nodes[i].position.z,
+                            nodes[j].position.x, nodes[j].position.y, nodes[j].position.z
+                        );
+
+                        const alpha = 1 - (distance / config.connectRadius);
+                        const color = new THREE.Color(0x00ffc8);
+
+                        colors.push(color.r, color.g, color.b, alpha);
+                        colors.push(color.r, color.g, color.b, alpha);
+
+                        connectionCount++;
+                    }
+                }
+            }
+
+            edgeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            edgeGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+
+            document.getElementById('connections').textContent = connectionCount;
+        }
+
+        // Mouse interaction
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            targetRotationY = mouseX * 0.5;
+            targetRotationX = mouseY * 0.5;
+        });
+
+        // FPS counter
+        let frameCount = 0;
+        let lastTime = performance.now();
+
+        function updateFPS() {
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime >= lastTime + 1000) {
+                document.getElementById('fps').textContent = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+        }
+
+        // Animation loop
+        let autoRotation = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update nodes
+            nodes.forEach((node, i) => {
+                node.update(config.nodeSpeed);
+                nodeMeshes[i].position.copy(node.position);
+                nodeMeshes[i].scale.setScalar(config.nodeSize);
+            });
+
+            // Update edges
+            updateEdges();
+
+            // Apply rotation
+            nodeGroup.rotation.y += (targetRotationY - nodeGroup.rotation.y) * 0.05;
+            nodeGroup.rotation.x += (targetRotationX - nodeGroup.rotation.x) * 0.05;
+
+            // Auto-rotation
+            autoRotation += 0.001;
+            nodeGroup.rotation.y += autoRotation;
+
+            renderer.render(scene, camera);
+            updateFPS();
+        }
+
+        // Control panel listeners
+        document.getElementById('nodeCount').addEventListener('input', (e) => {
+            config.nodeCount = parseInt(e.target.value);
+            document.getElementById('nodeCountValue').textContent = config.nodeCount;
+            document.getElementById('activeNodes').textContent = config.nodeCount;
+            initNodes();
+        });
+
+        document.getElementById('nodeSpeed').addEventListener('input', (e) => {
+            config.nodeSpeed = parseFloat(e.target.value);
+            document.getElementById('nodeSpeedValue').textContent = config.nodeSpeed.toFixed(1);
+        });
+
+        document.getElementById('connectRadius').addEventListener('input', (e) => {
+            config.connectRadius = parseFloat(e.target.value);
+            document.getElementById('connectRadiusValue').textContent = config.connectRadius;
+        });
+
+        document.getElementById('nodeSize').addEventListener('input', (e) => {
+            config.nodeSize = parseFloat(e.target.value);
+            document.getElementById('nodeSizeValue').textContent = config.nodeSize.toFixed(1);
+        });
+
+        document.getElementById('edgeThickness').addEventListener('input', (e) => {
+            config.edgeThickness = parseFloat(e.target.value);
+            document.getElementById('edgeThicknessValue').textContent = config.edgeThickness.toFixed(1);
+            edgeMaterial.linewidth = config.edgeThickness;
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize and start
+        initNodes();
+        initEdges();
+        animate();
+    </script>
+</body>
+</html>
