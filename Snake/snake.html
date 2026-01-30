@@ -24,6 +24,13 @@
 
         #gameContainer {
             position: relative;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+
+        #gameContainer.mode-3d canvas {
+            transform: rotateX(45deg);
+            transform-origin: center center;
         }
 
         canvas {
@@ -420,6 +427,14 @@
                 // Hide menu, show UI
                 document.getElementById('menu').classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
+
+                // Apply 3D tilt for 3D mode
+                const container = document.getElementById('gameContainer');
+                if (mode === '3d') {
+                    container.classList.add('mode-3d');
+                } else {
+                    container.classList.remove('mode-3d');
+                }
 
                 this.updateUI();
                 this.gameLoop();
@@ -882,6 +897,9 @@
             showMenu() {
                 document.getElementById('menu').classList.remove('hidden');
                 document.getElementById('ui').classList.add('hidden');
+
+                // Remove 3D tilt
+                document.getElementById('gameContainer').classList.remove('mode-3d');
 
                 // Clear canvas
                 this.ctx.fillStyle = '#0a0a0a';
