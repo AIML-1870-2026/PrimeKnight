@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello World</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            background-color: #0B24DE;
+            color: white;
+        }
+
+        h1 {
+            font-weight: bold;
+        }
+
+        .neon-box {
+            display: inline-block;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 3px solid #ff6ec7;
+            border-radius: 15px;
+            padding: 30px 50px;
+            box-shadow:
+                0 0 20px #ff6ec7,
+                0 0 40px #ff1493,
+                inset 0 0 20px rgba(255, 110, 199, 0.2);
+        }
+
+        p {
+            font-weight: bold;
+            font-size: 28px;
+            margin: 10px 0;
+        }
+
+        .neon-pink {
+            color: #ff6ec7;
+            text-shadow:
+                0 0 5px #ff6ec7,
+                0 0 10px #ff1493;
+            animation: neon-flicker 1.5s infinite alternate;
+        }
+
+        .neon-blue {
+            color: #00ffff;
+            text-shadow:
+                0 0 5px #00ffff,
+                0 0 10px #0099ff;
+            animation: neon-flicker 1.7s infinite alternate;
+        }
+
+        .neon-yellow {
+            color: #ffff00;
+            text-shadow:
+                0 0 5px #ffff00,
+                0 0 10px #ffaa00;
+            animation: neon-flicker 1.6s infinite alternate;
+        }
+
+        .neon-green {
+            color: #00ff00;
+            text-shadow:
+                0 0 5px #00ff00,
+                0 0 10px #00aa00;
+            animation: neon-flicker 1.8s infinite alternate;
+        }
+
+        @keyframes neon-flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                opacity: 0.4;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="neon-box">
+        <p><span class="neon-pink">Hello,</span> <span class="neon-blue">World!</span></p>
+        <p><span class="neon-yellow">I'm ready to</span> <span class="neon-green">vibe code.</span></p>
+    </div>
+</body>
+</html>
