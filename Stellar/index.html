@@ -514,8 +514,6 @@
         }
 
         // Animation loop
-        let autoRotation = 0;
-
         function animate() {
             requestAnimationFrame(animate);
 
@@ -529,13 +527,9 @@
             // Update edges
             updateEdges();
 
-            // Apply rotation
+            // Apply mouse-controlled rotation
             nodeGroup.rotation.y += (targetRotationY - nodeGroup.rotation.y) * 0.05;
             nodeGroup.rotation.x += (targetRotationX - nodeGroup.rotation.x) * 0.05;
-
-            // Auto-rotation
-            autoRotation += 0.001;
-            nodeGroup.rotation.y += autoRotation;
 
             renderer.render(scene, camera);
             updateFPS();
