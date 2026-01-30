@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            gap: 30px;
+        }
+        
+        .canvas-container {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            min-width: 250px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        .control-group .value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .reset-button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .reset-button:hover {
+            background: rgba(76, 175, 80, 1);
+        }
+        
+        .reset-button:active {
+            background: rgba(56, 142, 60, 1);
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <div class="controls">
+        <h3 style="margin-bottom: 15px; text-align: center;">Particle Controls</h3>
+        
+        <div class="control-group">
+            <label>Trail Length: <span class="value" id="trailValue">15</span></label>
+            <input type="range" id="trailLength" min="5" max="50" value="15">
+        </div>
+        
+        <div class="control-group">
+            <label>Star Count: <span class="value" id="countValue">500</span></label>
+            <input type="range" id="starCount" min="100" max="2000" value="500" step="50">
+        </div>
+        
+        <div class="control-group">
+            <label>Star Speed: <span class="value" id="speedValue">2</span></label>
+            <input type="range" id="starSpeed" min="0.5" max="10" value="2" step="0.5">
+        </div>
+        
+        <div class="control-group">
+            <label>Spawn Radius: <span class="value" id="radiusValue">0</span></label>
+            <input type="range" id="spawnRadius" min="0" max="200" value="0" step="10">
+        </div>
+        
+        <button class="reset-button" id="resetButton">Reset to Defaults</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to a fixed size (can be adjusted)
+        canvas.width = 1200;
+        canvas.height = 800;
+        
+        // Center point
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        
+        // Particle settings
+        let settings = {
+            trailLength: 15,
+            starCount: 500,
+            starSpeed: 2,
+            spawnRadius: 0
+        };
+        
+        // Particle class
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                // Random angle
+                const angle = Math.random() * Math.PI * 2;
+                
+                // Starting position with spawn radius
+                const spawnDist = settings.spawnRadius;
+                this.x = centerX + Math.cos(angle) * spawnDist;
+                this.y = centerY + Math.sin(angle) * spawnDist;
+                
+                // Velocity based on angle and speed
+                const speed = settings.starSpeed * (0.5 + Math.random() * 1.5);
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                
+                // Z-axis for depth (particles moving towards viewer)
+                this.z = Math.random() * 1000;
+                this.vz = settings.starSpeed * (2 + Math.random() * 3);
+                
+                // Trail history
+                this.trail = [];
+                
+                // Size variation
+                this.baseSize = 1 + Math.random() * 2;
+            }
+            
+            update() {
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+                this.z -= this.vz;
+                
+                // Add current position to trail
+                this.trail.push({ x: this.x, y: this.y, z: this.z });
+                
+                // Limit trail length
+                if (this.trail.length > settings.trailLength) {
+                    this.trail.shift();
+                }
+                
+                // Reset if particle goes off screen or too close
+                if (this.x < -100 || this.x > canvas.width + 100 || 
+                    this.y < -100 || this.y > canvas.height + 100 || 
+                    this.z < -100) {
+                    this.reset();
+                }
+            }
+            
+            draw() {
+                // Draw trail
+                for (let i = 0; i < this.trail.length; i++) {
+                    const point = this.trail[i];
+                    
+                    // Calculate size based on z-depth
+                    const scale = 1000 / (1000 + point.z);
+                    const size = this.baseSize * scale;
+                    
+                    // Calculate opacity (fade along trail)
+                    const opacity = (i / this.trail.length) * 0.8;
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Draw main particle (brightest)
+                const scale = 1000 / (1000 + this.z);
+                const size = this.baseSize * scale * 1.5;
+                
+                ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add glow effect
+                ctx.shadowBlur = 10 * scale;
+                ctx.shadowColor = 'white';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        // Create initial particles
+        let particles = [];
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < settings.starCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+        initParticles();
+        
+        // Animation loop
+        function animate() {
+            // Create trail effect by not fully clearing canvas
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw particles
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        // Handle slider changes
+        const trailSlider = document.getElementById('trailLength');
+        const countSlider = document.getElementById('starCount');
+        const speedSlider = document.getElementById('starSpeed');
+        const radiusSlider = document.getElementById('spawnRadius');
+        
+        trailSlider.addEventListener('input', (e) => {
+            settings.trailLength = parseInt(e.target.value);
+            document.getElementById('trailValue').textContent = settings.trailLength;
+        });
+        
+        countSlider.addEventListener('input', (e) => {
+            settings.starCount = parseInt(e.target.value);
+            document.getElementById('countValue').textContent = settings.starCount;
+            initParticles();
+        });
+        
+        speedSlider.addEventListener('input', (e) => {
+            settings.starSpeed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = settings.starSpeed;
+        });
+        
+        radiusSlider.addEventListener('input', (e) => {
+            settings.spawnRadius = parseInt(e.target.value);
+            document.getElementById('radiusValue').textContent = settings.spawnRadius;
+        });
+        
+        // Reset button functionality
+        const resetButton = document.getElementById('resetButton');
+        resetButton.addEventListener('click', () => {
+            // Reset to default values
+            trailSlider.value = 15;
+            countSlider.value = 500;
+            speedSlider.value = 2;
+            radiusSlider.value = 0;
+            
+            // Update settings
+            settings.trailLength = 15;
+            settings.starCount = 500;
+            settings.starSpeed = 2;
+            settings.spawnRadius = 0;
+            
+            // Update display values
+            document.getElementById('trailValue').textContent = 15;
+            document.getElementById('countValue').textContent = 500;
+            document.getElementById('speedValue').textContent = 2;
+            document.getElementById('radiusValue').textContent = 0;
+            
+            // Reinitialize particles with new count
+            initParticles();
+        });
+    </script>
+</body>
+</html>
