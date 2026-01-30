@@ -29,7 +29,7 @@
         }
 
         #gameContainer.mode-3d canvas {
-            transform: rotateX(15deg);
+            transform: rotateY(-15deg);
             transform-origin: center center;
         }
 
@@ -908,6 +908,9 @@
 
             endGame() {
                 this.isGameOver = true;
+
+                // Remove 3D tilt so overlay displays properly
+                document.getElementById('gameContainer').classList.remove('mode-3d');
 
                 // Add bonus for snake length
                 this.score += this.snake.length;
