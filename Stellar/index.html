@@ -440,6 +440,27 @@
             }
         }
 
+        function updateNodeCount(newCount) {
+            const currentCount = nodes.length;
+
+            if (newCount > currentCount) {
+                // Add new nodes
+                for (let i = 0; i < newCount - currentCount; i++) {
+                    nodes.push(new Node());
+                    const mesh = createNodeMesh();
+                    nodeMeshes.push(mesh);
+                    nodeGroup.add(mesh);
+                }
+            } else if (newCount < currentCount) {
+                // Remove excess nodes
+                for (let i = 0; i < currentCount - newCount; i++) {
+                    const mesh = nodeMeshes.pop();
+                    nodeGroup.remove(mesh);
+                    nodes.pop();
+                }
+            }
+        }
+
         // Edge system
         let edgeGeometry, edgeMaterial, edgeMesh;
 
@@ -557,7 +578,7 @@
             config.nodeCount = parseInt(e.target.value);
             document.getElementById('nodeCountValue').textContent = config.nodeCount;
             document.getElementById('activeNodes').textContent = config.nodeCount;
-            initNodes();
+            updateNodeCount(config.nodeCount);
         });
 
         document.getElementById('nodeSpeed').addEventListener('input', (e) => {
