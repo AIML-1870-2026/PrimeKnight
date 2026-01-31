@@ -439,6 +439,10 @@
                     Zen Feast
                     <div class="mode-desc">No death + 5 apples</div>
                 </button>
+                <button class="mode-btn" data-mode="maze">
+                    Maze
+                    <div class="mode-desc">Pacman-style walls</div>
+                </button>
             </div>
             <div class="controls-info">
                 <h3>Controls</h3>
@@ -511,6 +515,35 @@
             MULTIPLIER: { color: '#ffdd00', duration: 10000, name: '2x Points' },
             SHRINK: { color: '#00ff44', instant: true, name: 'Shrink' }
         };
+
+        // Pacman-style maze layout (1 = wall, 0 = path)
+        const MAZE_LAYOUT = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,1,1],
+            [0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0],
+            [1,1,1,1,1,0,1,0,1,1,1,0,0,0,1,1,1,0,1,0,1,1,1,1,1],
+            [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+            [1,1,1,1,1,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,1,1,1,1,1],
+            [0,0,0,0,1,0,1,0,1,0,0,0,0,0,0,0,1,0,1,0,1,0,0,0,0],
+            [1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+            [1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,0,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+            [1,0,1,1,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
 
         // Particle system
         class Particle {
@@ -735,16 +768,24 @@
                 this.particles = [];
                 this.activePowerups = [];
                 this.powerup = null;
-                this.tickRate = CONFIG.baseTickRate;
+                this.tickRate = mode === 'maze' ? CONFIG.baseTickRate * 2 : CONFIG.baseTickRate;
                 this.timer = 60;
                 this.layerFlash = 0;
 
-                // Initialize snake
-                this.snake = [
-                    { x: 12, y: 12, layer: this.currentLayer },
-                    { x: 11, y: 12, layer: this.currentLayer },
-                    { x: 10, y: 12, layer: this.currentLayer }
-                ];
+                // Initialize snake (different starting position for maze mode)
+                if (mode === 'maze') {
+                    this.snake = [
+                        { x: 5, y: 1, layer: this.currentLayer },
+                        { x: 4, y: 1, layer: this.currentLayer },
+                        { x: 3, y: 1, layer: this.currentLayer }
+                    ];
+                } else {
+                    this.snake = [
+                        { x: 12, y: 12, layer: this.currentLayer },
+                        { x: 11, y: 12, layer: this.currentLayer },
+                        { x: 10, y: 12, layer: this.currentLayer }
+                    ];
+                }
                 this.direction = { x: 1, y: 0 };
                 this.nextDirection = { x: 1, y: 0 };
 
@@ -836,6 +877,32 @@
                     if (head.x >= CONFIG.gridSize) head.x = 0;
                     if (head.y < 0) head.y = CONFIG.gridSize - 1;
                     if (head.y >= CONFIG.gridSize) head.y = 0;
+                } else if (this.gameMode === 'maze') {
+                    // Maze tunnel wrapping (left/right edges)
+                    if (head.x < 0) {
+                        head.x = CONFIG.gridSize - 1;
+                        // If wrapped into a wall, game over
+                        if (MAZE_LAYOUT[head.y][head.x] === 1) {
+                            this.endGame();
+                            return;
+                        }
+                    } else if (head.x >= CONFIG.gridSize) {
+                        head.x = 0;
+                        if (MAZE_LAYOUT[head.y][head.x] === 1) {
+                            this.endGame();
+                            return;
+                        }
+                    }
+                    // Top/bottom boundary collision
+                    if (head.y < 0 || head.y >= CONFIG.gridSize) {
+                        this.endGame();
+                        return;
+                    }
+                    // Maze wall collision
+                    if (MAZE_LAYOUT[head.y][head.x] === 1) {
+                        this.endGame();
+                        return;
+                    }
                 } else {
                     // Wall collision
                     if (head.x < 0 || head.x >= CONFIG.gridSize || head.y < 0 || head.y >= CONFIG.gridSize) {
@@ -929,7 +996,8 @@
                     layer = (this.gameMode === '3d' || this.gameMode === '3d-feast') ? Math.floor(Math.random() * 5) : this.currentLayer;
                 } while (
                     this.snake.some(s => s.x === x && s.y === y && s.layer === layer) ||
-                    this.foods.some(f => f.x === x && f.y === y && f.layer === layer)
+                    this.foods.some(f => f.x === x && f.y === y && f.layer === layer) ||
+                    (this.gameMode === 'maze' && MAZE_LAYOUT[y][x] === 1)
                 );
 
                 this.foods.push({ x, y, layer });
@@ -950,7 +1018,8 @@
                     layer = (this.gameMode === '3d' || this.gameMode === '3d-feast') ? Math.floor(Math.random() * 5) : this.currentLayer;
                 } while (
                     this.snake.some(s => s.x === x && s.y === y && s.layer === layer) ||
-                    this.foods.some(f => f.x === x && f.y === y && f.layer === layer)
+                    this.foods.some(f => f.x === x && f.y === y && f.layer === layer) ||
+                    (this.gameMode === 'maze' && MAZE_LAYOUT[y][x] === 1)
                 );
 
                 this.powerup = { x, y, layer, type, spawnTime: Date.now() };
@@ -1083,6 +1152,26 @@
                     ctx.moveTo(0, i * CONFIG.cellSize);
                     ctx.lineTo(this.canvas.width, i * CONFIG.cellSize);
                     ctx.stroke();
+                }
+
+                // Draw maze walls
+                if (this.gameMode === 'maze') {
+                    ctx.fillStyle = '#0044aa';
+                    ctx.shadowColor = '#0066ff';
+                    ctx.shadowBlur = 8;
+                    for (let y = 0; y < CONFIG.gridSize; y++) {
+                        for (let x = 0; x < CONFIG.gridSize; x++) {
+                            if (MAZE_LAYOUT[y][x] === 1) {
+                                ctx.fillRect(
+                                    x * CONFIG.cellSize + 1,
+                                    y * CONFIG.cellSize + 1,
+                                    CONFIG.cellSize - 2,
+                                    CONFIG.cellSize - 2
+                                );
+                            }
+                        }
+                    }
+                    ctx.shadowBlur = 0;
                 }
 
                 // 3D Mode: Draw all layers with depth effects
@@ -1287,7 +1376,8 @@
                     '3d': '3D Mode',
                     'feast': 'Feast Mode',
                     '3d-feast': '3D Feast Mode',
-                    'zen-feast': 'Zen Feast Mode'
+                    'zen-feast': 'Zen Feast Mode',
+                    'maze': 'Maze Mode'
                 };
                 document.getElementById('modeDisplay').textContent = modeNames[this.gameMode] || '';
 
@@ -1373,7 +1463,8 @@
                     '3d': '3D Mode',
                     'feast': 'Feast Mode',
                     '3d-feast': '3D Feast Mode',
-                    'zen-feast': 'Zen Feast Mode'
+                    'zen-feast': 'Zen Feast Mode',
+                    'maze': 'Maze Mode'
                 };
                 document.getElementById('modePlayedDisplay').textContent = modeNames[this.gameMode];
                 document.getElementById('gameOverOverlay').classList.remove('hidden');
