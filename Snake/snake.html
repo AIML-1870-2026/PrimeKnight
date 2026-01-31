@@ -435,6 +435,10 @@
                     3D Feast
                     <div class="mode-desc">5 layers + 5 apples</div>
                 </button>
+                <button class="mode-btn" data-mode="zen-feast">
+                    Zen Feast
+                    <div class="mode-desc">No death + 5 apples</div>
+                </button>
             </div>
             <div class="controls-info">
                 <h3>Controls</h3>
@@ -746,7 +750,7 @@
 
                 // Initialize and spawn food
                 this.foods = [];
-                const foodCount = (mode === 'feast' || mode === '3d-feast') ? 5 : 1;
+                const foodCount = (mode === 'feast' || mode === '3d-feast' || mode === 'zen-feast') ? 5 : 1;
                 for (let i = 0; i < foodCount; i++) {
                     this.spawnFood();
                 }
@@ -827,7 +831,7 @@
                 head.layer = this.currentLayer;
 
                 // Zen mode wrapping
-                if (this.gameMode === 'zen') {
+                if (this.gameMode === 'zen' || this.gameMode === 'zen-feast') {
                     if (head.x < 0) head.x = CONFIG.gridSize - 1;
                     if (head.x >= CONFIG.gridSize) head.x = 0;
                     if (head.y < 0) head.y = CONFIG.gridSize - 1;
@@ -842,7 +846,7 @@
 
                 // Self collision
                 const hasInvincibility = this.activePowerups.some(p => p.type === 'INVINCIBLE');
-                if (!hasInvincibility && this.gameMode !== 'zen') {
+                if (!hasInvincibility && this.gameMode !== 'zen' && this.gameMode !== 'zen-feast') {
                     for (let i = 0; i < this.snake.length; i++) {
                         const segment = this.snake[i];
                         if ((this.gameMode === '3d' || this.gameMode === '3d-feast')) {
@@ -1282,7 +1286,8 @@
                     'zen': 'Zen Mode',
                     '3d': '3D Mode',
                     'feast': 'Feast Mode',
-                    '3d-feast': '3D Feast Mode'
+                    '3d-feast': '3D Feast Mode',
+                    'zen-feast': 'Zen Feast Mode'
                 };
                 document.getElementById('modeDisplay').textContent = modeNames[this.gameMode] || '';
 
@@ -1367,7 +1372,8 @@
                     'zen': 'Zen Mode',
                     '3d': '3D Mode',
                     'feast': 'Feast Mode',
-                    '3d-feast': '3D Feast Mode'
+                    '3d-feast': '3D Feast Mode',
+                    'zen-feast': 'Zen Feast Mode'
                 };
                 document.getElementById('modePlayedDisplay').textContent = modeNames[this.gameMode];
                 document.getElementById('gameOverOverlay').classList.remove('hidden');
