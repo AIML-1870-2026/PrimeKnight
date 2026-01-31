@@ -871,7 +871,7 @@
                         // Draw foods on this layer
                         this.foods.forEach(food => {
                             if (food.layer === layer) {
-                                ctx.fillStyle = '#ff0066';
+                                ctx.fillStyle = layerColor.main;
                                 const size = (CONFIG.cellSize - 8) * scale;
                                 const offset = (CONFIG.cellSize - size) / 2;
                                 ctx.fillRect(
@@ -911,12 +911,14 @@
 
                 // Draw foods on current layer
                 this.foods.forEach(food => {
-                    if (this.gameMode !== '3d' || food.layer === this.currentLayer) {
+                    if (!(this.gameMode === '3d' || this.gameMode === '3d-feast') || food.layer === this.currentLayer) {
                         const foodPulse = Math.sin(Date.now() / 200) * 0.25 + 1;
+                        const is3DMode = (this.gameMode === '3d' || this.gameMode === '3d-feast');
+                        const foodColor = is3DMode ? LAYER_COLORS[food.layer].main : '#ff0066';
                         ctx.save();
-                        ctx.shadowColor = '#ff0066';
+                        ctx.shadowColor = foodColor;
                         ctx.shadowBlur = 15 * foodPulse;
-                        ctx.fillStyle = '#ff0066';
+                        ctx.fillStyle = foodColor;
                         ctx.fillRect(
                             food.x * CONFIG.cellSize + 4,
                             food.y * CONFIG.cellSize + 4,
@@ -929,7 +931,7 @@
 
                 // Draw powerup
                 if (this.powerup) {
-                    const shouldDraw = this.gameMode !== '3d' || this.powerup.layer === this.currentLayer;
+                    const shouldDraw = !(this.gameMode === '3d' || this.gameMode === '3d-feast') || this.powerup.layer === this.currentLayer;
                     if (shouldDraw) {
                         const config = POWERUPS[this.powerup.type];
                         const pulse = Math.sin(Date.now() / 150) * 0.3 + 1;
@@ -952,7 +954,7 @@
 
                 // Draw snake on current layer
                 this.snake.forEach((segment, index) => {
-                    const shouldDraw = this.gameMode !== '3d' || segment.layer === this.currentLayer;
+                    const shouldDraw = !(this.gameMode === '3d' || this.gameMode === '3d-feast') || segment.layer === this.currentLayer;
                     if (!shouldDraw) return;
 
                     const alpha = 1 - (index / this.snake.length) * 0.5;
