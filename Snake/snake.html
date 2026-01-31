@@ -51,7 +51,7 @@
             transform: translate(-50%, -50%);
             text-align: center;
             background: rgba(10, 10, 10, 0.95);
-            padding: 40px;
+            padding: 25px 30px;
             border-radius: 10px;
             border: 2px solid #00ff88;
             box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
@@ -63,18 +63,25 @@
         }
 
         h1 {
-            font-size: 48px;
-            margin-bottom: 30px;
+            font-size: 36px;
+            margin-bottom: 15px;
             color: #00ff88;
             text-shadow: 0 0 10px rgba(0, 255, 136, 0.8);
         }
 
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
         .mode-btn {
             display: block;
-            width: 300px;
-            margin: 15px auto;
-            padding: 15px;
-            font-size: 18px;
+            width: 180px;
+            margin: 0;
+            padding: 12px 10px;
+            font-size: 14px;
             background: linear-gradient(135deg, #00ff88, #00aa55);
             border: none;
             border-radius: 5px;
@@ -91,9 +98,9 @@
         }
 
         .mode-desc {
-            font-size: 12px;
+            font-size: 10px;
             color: #00ff88;
-            margin-top: 5px;
+            margin-top: 3px;
             font-weight: normal;
         }
 
@@ -199,17 +206,18 @@
         }
 
         .controls-info {
-            margin-top: 30px;
-            padding: 20px;
+            margin-top: 0;
+            padding: 12px;
             background: rgba(0, 255, 136, 0.05);
             border-radius: 5px;
-            font-size: 14px;
-            line-height: 1.8;
+            font-size: 11px;
+            line-height: 1.6;
         }
 
         .controls-info h3 {
             color: #00ff88;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            font-size: 12px;
         }
 
         #finalScore {
@@ -272,38 +280,39 @@
 
         <div id="menu">
             <h1>SNAKE</h1>
-            <button class="mode-btn" data-mode="classic">
-                Classic
-                <div class="mode-desc">Traditional snake gameplay</div>
-            </button>
-            <button class="mode-btn" data-mode="timed">
-                Timed Challenge
-                <div class="mode-desc">60-second countdown</div>
-            </button>
-            <button class="mode-btn" data-mode="survival">
-                Survival
-                <div class="mode-desc">Progressive speed increase</div>
-            </button>
-            <button class="mode-btn" data-mode="zen">
-                Zen Mode
-                <div class="mode-desc">No death, pass through walls</div>
-            </button>
-            <button class="mode-btn" data-mode="3d">
-                3D Mode
-                <div class="mode-desc">5 layered playing fields</div>
-            </button>
-            <button class="mode-btn" data-mode="feast">
-                Feast
-                <div class="mode-desc">5 apples at once</div>
-            </button>
-            <button class="mode-btn" data-mode="3d-feast">
-                3D Feast
-                <div class="mode-desc">5 layers + 5 apples</div>
-            </button>
+            <div class="mode-grid">
+                <button class="mode-btn" data-mode="classic">
+                    Classic
+                    <div class="mode-desc">Traditional gameplay</div>
+                </button>
+                <button class="mode-btn" data-mode="timed">
+                    Timed
+                    <div class="mode-desc">60-second countdown</div>
+                </button>
+                <button class="mode-btn" data-mode="survival">
+                    Survival
+                    <div class="mode-desc">Speed increases</div>
+                </button>
+                <button class="mode-btn" data-mode="zen">
+                    Zen
+                    <div class="mode-desc">No death</div>
+                </button>
+                <button class="mode-btn" data-mode="3d">
+                    3D
+                    <div class="mode-desc">5 layers</div>
+                </button>
+                <button class="mode-btn" data-mode="feast">
+                    Feast
+                    <div class="mode-desc">5 apples</div>
+                </button>
+                <button class="mode-btn" data-mode="3d-feast">
+                    3D Feast
+                    <div class="mode-desc">5 layers + 5 apples</div>
+                </button>
+            </div>
             <div class="controls-info">
                 <h3>Controls</h3>
-                Move: Arrow Keys or WASD<br>
-                3D Layers: Q/E or J/K<br>
+                Move: Arrow Keys / WASD | 3D Layers: Q/E<br>
                 Pause: Space | Restart: R | Menu: ESC
             </div>
         </div>
