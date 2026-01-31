@@ -443,6 +443,10 @@
                     Maze
                     <div class="mode-desc">Pacman-style walls</div>
                 </button>
+                <button class="mode-btn" data-mode="maze-feast">
+                    Maze Feast
+                    <div class="mode-desc">Maze + 5 apples</div>
+                </button>
             </div>
             <div class="controls-info">
                 <h3>Controls</h3>
@@ -768,12 +772,12 @@
                 this.particles = [];
                 this.activePowerups = [];
                 this.powerup = null;
-                this.tickRate = mode === 'maze' ? CONFIG.baseTickRate * 4 : CONFIG.baseTickRate;
+                this.tickRate = (mode === 'maze' || mode === 'maze-feast') ? CONFIG.baseTickRate * 4 : CONFIG.baseTickRate;
                 this.timer = 60;
                 this.layerFlash = 0;
 
                 // Initialize snake (different starting position for maze mode)
-                if (mode === 'maze') {
+                if (mode === 'maze' || mode === 'maze-feast') {
                     this.snake = [
                         { x: 5, y: 1, layer: this.currentLayer },
                         { x: 4, y: 1, layer: this.currentLayer },
@@ -791,7 +795,7 @@
 
                 // Initialize and spawn food
                 this.foods = [];
-                const foodCount = (mode === 'feast' || mode === '3d-feast' || mode === 'zen-feast') ? 5 : 1;
+                const foodCount = (mode === 'feast' || mode === '3d-feast' || mode === 'zen-feast' || mode === 'maze-feast') ? 5 : 1;
                 for (let i = 0; i < foodCount; i++) {
                     this.spawnFood();
                 }
@@ -877,7 +881,7 @@
                     if (head.x >= CONFIG.gridSize) head.x = 0;
                     if (head.y < 0) head.y = CONFIG.gridSize - 1;
                     if (head.y >= CONFIG.gridSize) head.y = 0;
-                } else if (this.gameMode === 'maze') {
+                } else if (this.gameMode === 'maze' || this.gameMode === 'maze-feast') {
                     // Maze tunnel wrapping (left/right edges)
                     if (head.x < 0) {
                         head.x = CONFIG.gridSize - 1;
@@ -993,7 +997,7 @@
                 } while (
                     this.snake.some(s => s.x === x && s.y === y && s.layer === layer) ||
                     this.foods.some(f => f.x === x && f.y === y && f.layer === layer) ||
-                    (this.gameMode === 'maze' && MAZE_LAYOUT[y][x] === 1)
+                    ((this.gameMode === 'maze' || this.gameMode === 'maze-feast') && MAZE_LAYOUT[y][x] === 1)
                 );
 
                 this.foods.push({ x, y, layer });
@@ -1015,7 +1019,7 @@
                 } while (
                     this.snake.some(s => s.x === x && s.y === y && s.layer === layer) ||
                     this.foods.some(f => f.x === x && f.y === y && f.layer === layer) ||
-                    (this.gameMode === 'maze' && MAZE_LAYOUT[y][x] === 1)
+                    ((this.gameMode === 'maze' || this.gameMode === 'maze-feast') && MAZE_LAYOUT[y][x] === 1)
                 );
 
                 this.powerup = { x, y, layer, type, spawnTime: Date.now() };
@@ -1151,7 +1155,7 @@
                 }
 
                 // Draw maze walls
-                if (this.gameMode === 'maze') {
+                if (this.gameMode === 'maze' || this.gameMode === 'maze-feast') {
                     ctx.fillStyle = '#0044aa';
                     ctx.shadowColor = '#0066ff';
                     ctx.shadowBlur = 8;
@@ -1373,7 +1377,8 @@
                     'feast': 'Feast Mode',
                     '3d-feast': '3D Feast Mode',
                     'zen-feast': 'Zen Feast Mode',
-                    'maze': 'Maze Mode'
+                    'maze': 'Maze Mode',
+                    'maze-feast': 'Maze Feast Mode'
                 };
                 document.getElementById('modeDisplay').textContent = modeNames[this.gameMode] || '';
 
@@ -1460,7 +1465,8 @@
                     'feast': 'Feast Mode',
                     '3d-feast': '3D Feast Mode',
                     'zen-feast': 'Zen Feast Mode',
-                    'maze': 'Maze Mode'
+                    'maze': 'Maze Mode',
+                    'maze-feast': 'Maze Feast Mode'
                 };
                 document.getElementById('modePlayedDisplay').textContent = modeNames[this.gameMode];
                 document.getElementById('gameOverOverlay').classList.remove('hidden');
