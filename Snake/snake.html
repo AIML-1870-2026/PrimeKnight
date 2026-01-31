@@ -881,27 +881,23 @@
                     // Maze tunnel wrapping (left/right edges)
                     if (head.x < 0) {
                         head.x = CONFIG.gridSize - 1;
-                        // If wrapped into a wall, bounce back
+                        // If wrapped into a wall, skip this tick (stay in place)
                         if (MAZE_LAYOUT[head.y][head.x] === 1) {
-                            head.x = this.snake[0].x;
-                            head.y = this.snake[0].y;
+                            return;
                         }
                     } else if (head.x >= CONFIG.gridSize) {
                         head.x = 0;
                         if (MAZE_LAYOUT[head.y][head.x] === 1) {
-                            head.x = this.snake[0].x;
-                            head.y = this.snake[0].y;
+                            return;
                         }
                     }
-                    // Top/bottom boundary - bounce back
+                    // Top/bottom boundary - skip tick (stay in place)
                     if (head.y < 0 || head.y >= CONFIG.gridSize) {
-                        head.x = this.snake[0].x;
-                        head.y = this.snake[0].y;
+                        return;
                     }
-                    // Maze wall collision - bounce back instead of dying
+                    // Maze wall collision - skip tick instead of dying
                     if (MAZE_LAYOUT[head.y] && MAZE_LAYOUT[head.y][head.x] === 1) {
-                        head.x = this.snake[0].x;
-                        head.y = this.snake[0].y;
+                        return;
                     }
                 } else {
                     // Wall collision
