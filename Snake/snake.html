@@ -768,7 +768,7 @@
                 this.particles = [];
                 this.activePowerups = [];
                 this.powerup = null;
-                this.tickRate = mode === 'maze' ? CONFIG.baseTickRate * 2 : CONFIG.baseTickRate;
+                this.tickRate = mode === 'maze' ? CONFIG.baseTickRate * 4 : CONFIG.baseTickRate;
                 this.timer = 60;
                 this.layerFlash = 0;
 
@@ -881,27 +881,27 @@
                     // Maze tunnel wrapping (left/right edges)
                     if (head.x < 0) {
                         head.x = CONFIG.gridSize - 1;
-                        // If wrapped into a wall, game over
+                        // If wrapped into a wall, bounce back
                         if (MAZE_LAYOUT[head.y][head.x] === 1) {
-                            this.endGame();
-                            return;
+                            head.x = this.snake[0].x;
+                            head.y = this.snake[0].y;
                         }
                     } else if (head.x >= CONFIG.gridSize) {
                         head.x = 0;
                         if (MAZE_LAYOUT[head.y][head.x] === 1) {
-                            this.endGame();
-                            return;
+                            head.x = this.snake[0].x;
+                            head.y = this.snake[0].y;
                         }
                     }
-                    // Top/bottom boundary collision
+                    // Top/bottom boundary - bounce back
                     if (head.y < 0 || head.y >= CONFIG.gridSize) {
-                        this.endGame();
-                        return;
+                        head.x = this.snake[0].x;
+                        head.y = this.snake[0].y;
                     }
-                    // Maze wall collision
-                    if (MAZE_LAYOUT[head.y][head.x] === 1) {
-                        this.endGame();
-                        return;
+                    // Maze wall collision - bounce back instead of dying
+                    if (MAZE_LAYOUT[head.y] && MAZE_LAYOUT[head.y][head.x] === 1) {
+                        head.x = this.snake[0].x;
+                        head.y = this.snake[0].y;
                     }
                 } else {
                     // Wall collision
