@@ -45,6 +45,9 @@
             border: 2px solid #00ff88;
             box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
             background: #0a0a0a;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #menu {
@@ -262,6 +265,12 @@
             font-size: 11px;
             font-weight: bold;
             color: #000;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .layer-dot:hover {
+            opacity: 0.6;
         }
 
         .layer-dot.active {
@@ -317,8 +326,8 @@
             </div>
             <div class="controls-info">
                 <h3>Controls</h3>
-                Move: Arrow Keys / WASD | 3D Layers: Q/E<br>
-                Pause: Space | Restart: R | Menu: ESC
+                Move: Arrow Keys / WASD / Swipe<br>
+                3D Layers: Q/E | Pause: Space / Double-tap
             </div>
         </div>
 
@@ -487,6 +496,78 @@
                     } else if (e.key === 'Escape') {
                         this.returnToMenu();
                     }
+                });
+
+                // Touch controls for mobile
+                let touchStartX = 0;
+                let touchStartY = 0;
+                let touchStartTime = 0;
+
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                    touchStartTime = Date.now();
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (this.isGameOver || this.isPaused) return;
+
+                    const touch = e.changedTouches[0];
+                    const deltaX = touch.clientX - touchStartX;
+                    const deltaY = touch.clientY - touchStartY;
+                    const deltaTime = Date.now() - touchStartTime;
+
+                    // Minimum swipe distance and max time
+                    const minSwipe = 30;
+                    const maxTime = 500;
+
+                    if (deltaTime > maxTime) return;
+
+                    // Determine swipe direction
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        // Horizontal swipe
+                        if (Math.abs(deltaX) > minSwipe) {
+                            if (deltaX > 0 && this.direction.x === 0) {
+                                this.nextDirection = { x: 1, y: 0 }; // Right
+                            } else if (deltaX < 0 && this.direction.x === 0) {
+                                this.nextDirection = { x: -1, y: 0 }; // Left
+                            }
+                        }
+                    } else {
+                        // Vertical swipe
+                        if (Math.abs(deltaY) > minSwipe) {
+                            if (deltaY > 0 && this.direction.y === 0) {
+                                this.nextDirection = { x: 0, y: 1 }; // Down
+                            } else if (deltaY < 0 && this.direction.y === 0) {
+                                this.nextDirection = { x: 0, y: -1 }; // Up
+                            }
+                        }
+                    }
+                }, { passive: false });
+
+                // Double tap to pause
+                let lastTap = 0;
+                this.canvas.addEventListener('touchend', (e) => {
+                    const now = Date.now();
+                    if (now - lastTap < 300) {
+                        this.togglePause();
+                    }
+                    lastTap = now;
+                });
+
+                // Layer dot click/tap to switch layers
+                document.querySelectorAll('.layer-dot').forEach(dot => {
+                    dot.addEventListener('click', (e) => {
+                        if (!(this.gameMode === '3d' || this.gameMode === '3d-feast')) return;
+                        const targetLayer = parseInt(dot.dataset.layer);
+                        if (targetLayer !== this.currentLayer) {
+                            this.currentLayer = targetLayer;
+                            this.createLayerSwitchEffect();
+                        }
+                    });
                 });
             }
 
