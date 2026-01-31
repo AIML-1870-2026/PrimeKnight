@@ -286,6 +286,114 @@
             position: absolute;
             margin-left: 25px;
         }
+
+        /* Platform toggle buttons */
+        .platform-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 15px;
+        }
+
+        .toggle-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            background: #1a1a1a;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .toggle-btn:first-child {
+            border-radius: 5px 0 0 5px;
+        }
+
+        .toggle-btn:last-child {
+            border-radius: 0 5px 5px 0;
+            border-left: none;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(0, 255, 136, 0.2);
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #00ff88, #00aa55);
+            color: #0a0a0a;
+        }
+
+        /* Mobile mode overrides */
+        .mobile-mode canvas {
+            width: 360px !important;
+            height: 360px !important;
+        }
+
+        .mobile-mode #ui {
+            width: 360px;
+            font-size: 11px;
+        }
+
+        .mobile-mode #menu {
+            padding: 20px;
+        }
+
+        .mobile-mode .mode-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .mobile-mode .mode-btn {
+            width: 140px;
+            font-size: 12px;
+            padding: 10px 8px;
+        }
+
+        .mobile-mode .mode-desc {
+            font-size: 9px;
+        }
+
+        .mobile-mode h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .mobile-mode .controls-info {
+            font-size: 10px;
+            padding: 10px;
+        }
+
+        .mobile-mode #layerIndicator {
+            right: 10px;
+            padding: 10px 6px;
+        }
+
+        .mobile-mode .layer-dot {
+            width: 30px;
+            height: 20px;
+            font-size: 10px;
+        }
+
+        .mobile-mode #score {
+            font-size: 16px;
+        }
+
+        .mobile-mode #scorePanel {
+            gap: 10px;
+        }
+
+        .mobile-mode .overlay-title {
+            font-size: 36px;
+        }
+
+        .mobile-mode .overlay-btn {
+            padding: 12px 30px;
+            font-size: 14px;
+        }
+
+        .mobile-mode #finalScore {
+            font-size: 28px;
+        }
     </style>
 </head>
 <body>
@@ -293,6 +401,10 @@
         <canvas id="gameCanvas" width="600" height="600"></canvas>
 
         <div id="menu">
+            <div class="platform-toggle">
+                <button id="desktopModeBtn" class="toggle-btn active">Desktop</button>
+                <button id="mobileModeBtn" class="toggle-btn">Mobile</button>
+            </div>
             <h1>SNAKE</h1>
             <div class="mode-grid">
                 <button class="mode-btn" data-mode="classic">
@@ -432,6 +544,7 @@
                 this.canvas = document.getElementById('gameCanvas');
                 this.ctx = this.canvas.getContext('2d');
                 this.gameMode = null;
+                this.mobileMode = false;
                 this.isPaused = false;
                 this.isGameOver = false;
                 this.score = 0;
@@ -453,7 +566,44 @@
                 this.showMenu();
             }
 
+            setMobileMode(enabled) {
+                this.mobileMode = enabled;
+                const container = document.getElementById('gameContainer');
+                const desktopBtn = document.getElementById('desktopModeBtn');
+                const mobileBtn = document.getElementById('mobileModeBtn');
+
+                if (enabled) {
+                    container.classList.add('mobile-mode');
+                    this.canvas.width = 360;
+                    this.canvas.height = 360;
+                    CONFIG.cellSize = 14.4;
+                    desktopBtn.classList.remove('active');
+                    mobileBtn.classList.add('active');
+                } else {
+                    container.classList.remove('mobile-mode');
+                    this.canvas.width = 600;
+                    this.canvas.height = 600;
+                    CONFIG.cellSize = 24;
+                    desktopBtn.classList.add('active');
+                    mobileBtn.classList.remove('active');
+                }
+
+                // Redraw menu if currently showing
+                if (!this.gameMode || this.isGameOver) {
+                    this.ctx.fillStyle = '#0a0a0a';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+            }
+
             initEventListeners() {
+                // Platform toggle (Desktop/Mobile)
+                document.getElementById('desktopModeBtn').addEventListener('click', () => {
+                    this.setMobileMode(false);
+                });
+                document.getElementById('mobileModeBtn').addEventListener('click', () => {
+                    this.setMobileMode(true);
+                });
+
                 // Mode selection
                 document.querySelectorAll('.mode-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
