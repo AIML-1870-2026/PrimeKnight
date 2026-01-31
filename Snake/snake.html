@@ -228,6 +228,114 @@
             font-size: 12px;
         }
 
+        /* Powerup settings */
+        .powerup-settings {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 255, 136, 0.05);
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .powerup-settings h3 {
+            color: #00ff88;
+            margin-bottom: 10px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .powerup-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .powerup-toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .powerup-toggle-row.master-toggle {
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .powerup-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .powerup-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 36px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #00ff88;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(16px);
+        }
+
+        .mobile-mode .powerup-settings {
+            padding: 10px;
+        }
+
+        .mobile-mode .powerup-label {
+            font-size: 10px;
+            gap: 6px;
+        }
+
+        .mobile-mode .powerup-color-dot {
+            width: 10px;
+            height: 10px;
+        }
+
+        .mobile-mode .toggle-switch {
+            width: 32px;
+            height: 18px;
+        }
+
+        .mobile-mode .toggle-switch::after {
+            width: 14px;
+            height: 14px;
+        }
+
+        .mobile-mode .toggle-switch.active::after {
+            transform: translateX(14px);
+        }
+
         #finalScore {
             font-size: 36px;
             color: #00ff88;
@@ -453,6 +561,50 @@
                 Move: Arrow Keys / WASD / Swipe<br>
                 3D Layers: Q/E | Pause: Space / Double-tap
             </div>
+            <div class="powerup-settings">
+                <h3>Power-Ups</h3>
+                <div class="powerup-toggle-row master-toggle">
+                    <span class="powerup-label">
+                        <strong>All Power-Ups</strong>
+                    </span>
+                    <div class="toggle-switch active" id="toggleAll" data-powerup="ALL"></div>
+                </div>
+                <div class="powerup-toggle-row">
+                    <span class="powerup-label">
+                        <span class="powerup-color-dot" style="background: #ff8800;"></span>
+                        Speed Boost
+                    </span>
+                    <div class="toggle-switch active" data-powerup="SPEED"></div>
+                </div>
+                <div class="powerup-toggle-row">
+                    <span class="powerup-label">
+                        <span class="powerup-color-dot" style="background: #0088ff;"></span>
+                        Slow Motion
+                    </span>
+                    <div class="toggle-switch active" data-powerup="SLOW"></div>
+                </div>
+                <div class="powerup-toggle-row">
+                    <span class="powerup-label">
+                        <span class="powerup-color-dot" style="background: #aa00ff;"></span>
+                        Invincibility
+                    </span>
+                    <div class="toggle-switch active" data-powerup="INVINCIBLE"></div>
+                </div>
+                <div class="powerup-toggle-row">
+                    <span class="powerup-label">
+                        <span class="powerup-color-dot" style="background: #ffdd00;"></span>
+                        2x Points
+                    </span>
+                    <div class="toggle-switch active" data-powerup="MULTIPLIER"></div>
+                </div>
+                <div class="powerup-toggle-row">
+                    <span class="powerup-label">
+                        <span class="powerup-color-dot" style="background: #00ff44;"></span>
+                        Shrink
+                    </span>
+                    <div class="toggle-switch active" data-powerup="SHRINK"></div>
+                </div>
+            </div>
         </div>
 
         <div id="ui" class="hidden">
@@ -518,6 +670,15 @@
             INVINCIBLE: { color: '#aa00ff', duration: 3000, name: 'Invincibility' },
             MULTIPLIER: { color: '#ffdd00', duration: 10000, name: '2x Points' },
             SHRINK: { color: '#00ff44', instant: true, name: 'Shrink' }
+        };
+
+        // Power-up enabled states
+        const POWERUP_ENABLED = {
+            SPEED: true,
+            SLOW: true,
+            INVINCIBLE: true,
+            MULTIPLIER: true,
+            SHRINK: true
         };
 
         // Pacman-style maze layout (1 = wall, 0 = path)
@@ -965,8 +1126,9 @@
                         this.tickRate = Math.max(50, this.tickRate * 0.9);
                     }
 
-                    // Spawn powerup
-                    if (Math.random() < CONFIG.powerupSpawnChance && !this.powerup) {
+                    // Spawn powerup (only if at least one is enabled)
+                    const anyPowerupEnabled = Object.values(POWERUP_ENABLED).some(v => v);
+                    if (anyPowerupEnabled && Math.random() < CONFIG.powerupSpawnChance && !this.powerup) {
                         this.spawnPowerup();
                     }
                 } else {
@@ -1008,7 +1170,9 @@
             }
 
             spawnPowerup() {
-                const types = Object.keys(POWERUPS);
+                // Filter to only enabled powerups
+                const types = Object.keys(POWERUPS).filter(type => POWERUP_ENABLED[type]);
+                if (types.length === 0) return; // No powerups enabled
                 const type = types[Math.floor(Math.random() * types.length)];
 
                 let x, y, layer;
@@ -1477,6 +1641,42 @@
         let game;
         window.addEventListener('DOMContentLoaded', () => {
             game = new Game();
+
+            // Powerup toggle event listeners
+            document.querySelectorAll('.toggle-switch[data-powerup]').forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    const powerupType = toggle.dataset.powerup;
+
+                    if (powerupType === 'ALL') {
+                        // Master toggle
+                        const newState = !toggle.classList.contains('active');
+                        toggle.classList.toggle('active', newState);
+
+                        // Update all individual toggles
+                        document.querySelectorAll('.toggle-switch[data-powerup]').forEach(t => {
+                            if (t.dataset.powerup !== 'ALL') {
+                                t.classList.toggle('active', newState);
+                                POWERUP_ENABLED[t.dataset.powerup] = newState;
+                            }
+                        });
+                    } else {
+                        // Individual toggle
+                        toggle.classList.toggle('active');
+                        POWERUP_ENABLED[powerupType] = toggle.classList.contains('active');
+
+                        // Update master toggle state
+                        const allEnabled = Object.values(POWERUP_ENABLED).every(v => v);
+                        const noneEnabled = Object.values(POWERUP_ENABLED).every(v => !v);
+                        const masterToggle = document.getElementById('toggleAll');
+
+                        if (allEnabled) {
+                            masterToggle.classList.add('active');
+                        } else {
+                            masterToggle.classList.remove('active');
+                        }
+                    }
+                });
+            });
         });
     </script>
 </body>
