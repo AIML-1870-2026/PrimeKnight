@@ -121,6 +121,11 @@
             color: #fff;
         }
 
+        .btn-success {
+            background: #00ff64;
+            color: #1a1a2e;
+        }
+
         .btn-preset {
             background: #2d3436;
             color: #dfe6e9;
@@ -204,6 +209,7 @@
             display: flex;
             gap: 5px;
             margin-top: 8px;
+            flex-wrap: wrap;
         }
 
         .mouse-mode .btn, .preset-group .btn, .boundary-group .btn {
@@ -248,6 +254,51 @@
             background: #333;
             margin: 15px 0;
         }
+
+        .special-entities {
+            background: rgba(100, 100, 100, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .entity-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .entity-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .entity-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .entity-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .entity-dot.leader {
+            background: #00ff64;
+        }
+
+        .entity-dot.predator {
+            background: #ff4757;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+            flex: none;
+        }
     </style>
 </head>
 <body>
@@ -282,6 +333,26 @@
             <button id="resetBtn" class="btn btn-secondary">Reset</button>
         </div>
 
+        <h3>Special Entities</h3>
+        <div class="special-entities">
+            <div class="entity-row">
+                <div class="entity-indicator">
+                    <div class="entity-dot leader"></div>
+                    <span>Leader</span>
+                </div>
+                <span id="leaderStatus">None</span>
+                <button id="clearLeader" class="btn btn-secondary btn-small">Clear</button>
+            </div>
+            <div class="entity-row">
+                <div class="entity-indicator">
+                    <div class="entity-dot predator"></div>
+                    <span>Predator</span>
+                </div>
+                <span id="predatorStatus">None</span>
+                <button id="clearPredator" class="btn btn-secondary btn-small">Clear</button>
+            </div>
+        </div>
+
         <h3>Presets</h3>
         <div class="preset-group">
             <button id="presetSchooling" class="btn btn-preset" title="Fish-like schooling behavior">Schooling</button>
@@ -300,6 +371,8 @@
             <button id="modeAdd" class="btn btn-secondary active" title="Click to add new boids">Add</button>
             <button id="modeAttract" class="btn btn-secondary" title="Hold to attract boids">Attract</button>
             <button id="modeRepel" class="btn btn-secondary" title="Hold to repel boids">Repel</button>
+            <button id="modeLeader" class="btn btn-success" title="Click a boid to make it the leader">Set Leader</button>
+            <button id="modePredator" class="btn btn-danger" title="Click to place a predator">Predator</button>
         </div>
 
         <div class="section-divider"></div>
@@ -316,6 +389,14 @@
         <div class="control-group tooltip" data-tooltip="How strongly boids steer toward center of nearby flockmates">
             <label>Cohesion <span id="cohesionWeightVal">1.0</span></label>
             <input type="range" id="cohesionWeight" min="0" max="5" step="0.1" value="1.0">
+        </div>
+        <div class="control-group tooltip" data-tooltip="How strongly boids follow the leader (green boid)">
+            <label>Follow Leader <span id="leaderWeightVal">2.0</span></label>
+            <input type="range" id="leaderWeight" min="0" max="5" step="0.1" value="2.0">
+        </div>
+        <div class="control-group tooltip" data-tooltip="How strongly boids flee from the predator (red)">
+            <label>Evade Predator <span id="predatorWeightVal">3.0</span></label>
+            <input type="range" id="predatorWeight" min="0" max="5" step="0.1" value="3.0">
         </div>
 
         <h3>Physics</h3>
@@ -337,13 +418,17 @@
             <label>Separation Radius <span id="separationRadiusVal">25</span>px</label>
             <input type="range" id="separationRadius" min="10" max="100" step="5" value="25">
         </div>
+        <div class="control-group tooltip" data-tooltip="Distance at which boids detect and flee from predator">
+            <label>Predator Radius <span id="predatorRadiusVal">150</span>px</label>
+            <input type="range" id="predatorRadius" min="50" max="300" step="10" value="150">
+        </div>
 
         <div class="button-group">
             <button id="hideBtn" class="btn btn-secondary">Hide Panel (H)</button>
         </div>
 
         <div id="info">
-            <p>Click canvas to add boids or interact</p>
+            <p>Click canvas to interact based on mode</p>
             <p>Space = Pause | H = Toggle panel</p>
         </div>
     </div>
@@ -419,9 +504,12 @@
             separationWeight: 1.5,
             alignmentWeight: 1.0,
             cohesionWeight: 1.0,
+            leaderWeight: 2.0,
+            predatorWeight: 3.0,
+            predatorRadius: 150,
             mouseRadius: 150,
             mouseForce: 0.5,
-            boundaryMode: 'wrap' // 'wrap' or 'bounce'
+            boundaryMode: 'wrap'
         };
 
         // Presets
@@ -460,6 +548,10 @@
         let mousePos = new Vector(-1000, -1000);
         let mouseDown = false;
 
+        // Special entities
+        let leaderBoid = null;
+        let predator = null;
+
         // FPS tracking
         let lastTime = performance.now();
         let frameCount = 0;
@@ -468,6 +560,104 @@
         // Stats
         let avgSpeed = 0;
         let avgNeighbors = 0;
+
+        // ============================================
+        // Predator Class
+        // ============================================
+        class Predator {
+            constructor(x, y) {
+                this.position = new Vector(x, y);
+                this.velocity = new Vector(Math.random() - 0.5, Math.random() - 0.5).mult(2);
+                this.acceleration = new Vector(0, 0);
+                this.maxSpeed = CONFIG.maxSpeed * 0.8;
+                this.maxForce = CONFIG.maxForce * 1.5;
+            }
+
+            applyForce(force) {
+                this.acceleration = this.acceleration.add(force);
+            }
+
+            // Predator chases nearest boid
+            hunt(boids) {
+                let nearest = null;
+                let nearestDist = Infinity;
+
+                for (const boid of boids) {
+                    if (boid.isLeader) continue; // Don't chase leader
+                    const d = this.position.dist(boid.position);
+                    if (d < nearestDist) {
+                        nearestDist = d;
+                        nearest = boid;
+                    }
+                }
+
+                if (nearest && nearestDist < CONFIG.predatorRadius * 2) {
+                    let desired = nearest.position.sub(this.position);
+                    desired = desired.normalize().mult(this.maxSpeed);
+                    let steer = desired.sub(this.velocity);
+                    steer = steer.limit(this.maxForce);
+                    this.applyForce(steer);
+                }
+            }
+
+            update() {
+                this.velocity = this.velocity.add(this.acceleration);
+                this.velocity = this.velocity.limit(this.maxSpeed);
+                this.position = this.position.add(this.velocity);
+                this.acceleration = new Vector(0, 0);
+            }
+
+            edges(width, height) {
+                if (CONFIG.boundaryMode === 'wrap') {
+                    if (this.position.x > width) this.position.x = 0;
+                    if (this.position.x < 0) this.position.x = width;
+                    if (this.position.y > height) this.position.y = 0;
+                    if (this.position.y < 0) this.position.y = height;
+                } else {
+                    const margin = 20;
+                    const turnForce = 0.8;
+
+                    if (this.position.x < margin) this.velocity.x += turnForce;
+                    if (this.position.x > width - margin) this.velocity.x -= turnForce;
+                    if (this.position.y < margin) this.velocity.y += turnForce;
+                    if (this.position.y > height - margin) this.velocity.y -= turnForce;
+                }
+            }
+
+            draw(ctx) {
+                const angle = this.velocity.heading();
+                const size = 15;
+
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+
+                // Draw predator as larger red triangle with spikes
+                ctx.beginPath();
+                ctx.moveTo(size, 0);
+                ctx.lineTo(-size, size * 0.7);
+                ctx.lineTo(-size * 0.5, 0);
+                ctx.lineTo(-size, -size * 0.7);
+                ctx.closePath();
+
+                ctx.fillStyle = '#ff4757';
+                ctx.fill();
+
+                // Glow effect
+                ctx.shadowColor = '#ff4757';
+                ctx.shadowBlur = 15;
+                ctx.fill();
+
+                ctx.restore();
+
+                // Draw predator detection radius
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, CONFIG.predatorRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 71, 87, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
 
         // ============================================
         // Boid Class
@@ -479,6 +669,7 @@
                 this.velocity = new Vector(Math.cos(angle), Math.sin(angle)).mult(CONFIG.maxSpeed * 0.5);
                 this.acceleration = new Vector(0, 0);
                 this.neighborCount = 0;
+                this.isLeader = false;
             }
 
             applyForce(force) {
@@ -558,8 +749,43 @@
                 return new Vector(0, 0);
             }
 
+            followLeader() {
+                if (!leaderBoid || this.isLeader) return new Vector(0, 0);
+
+                const d = this.position.dist(leaderBoid.position);
+                if (d < CONFIG.neighborRadius * 3) {
+                    let desired = leaderBoid.position.sub(this.position);
+                    desired = desired.normalize().mult(CONFIG.maxSpeed);
+                    let steer = desired.sub(this.velocity);
+                    steer = steer.limit(CONFIG.maxForce);
+                    return steer;
+                }
+
+                return new Vector(0, 0);
+            }
+
+            evadePredator() {
+                if (!predator) return new Vector(0, 0);
+
+                const d = this.position.dist(predator.position);
+                if (d < CONFIG.predatorRadius) {
+                    let flee = this.position.sub(predator.position);
+                    flee = flee.normalize();
+                    // Stronger flee force when closer
+                    const strength = (1 - d / CONFIG.predatorRadius) * CONFIG.maxSpeed * 2;
+                    flee = flee.mult(strength);
+                    let steer = flee.sub(this.velocity);
+                    steer = steer.limit(CONFIG.maxForce * 2);
+                    return steer;
+                }
+
+                return new Vector(0, 0);
+            }
+
             mouseInteraction() {
-                if (!mouseDown || mouseMode === 'add') return new Vector(0, 0);
+                if (!mouseDown || mouseMode === 'add' || mouseMode === 'leader' || mouseMode === 'predator') {
+                    return new Vector(0, 0);
+                }
 
                 const d = this.position.dist(mousePos);
                 if (d < CONFIG.mouseRadius && d > 0) {
@@ -581,16 +807,21 @@
                 const ali = this.alignment(boids).mult(CONFIG.alignmentWeight);
                 const coh = this.cohesion(boids).mult(CONFIG.cohesionWeight);
                 const mouse = this.mouseInteraction();
+                const leader = this.followLeader().mult(CONFIG.leaderWeight);
+                const evade = this.evadePredator().mult(CONFIG.predatorWeight);
 
                 this.applyForce(sep);
                 this.applyForce(ali);
                 this.applyForce(coh);
                 this.applyForce(mouse);
+                this.applyForce(leader);
+                this.applyForce(evade);
             }
 
             update() {
                 this.velocity = this.velocity.add(this.acceleration);
-                this.velocity = this.velocity.limit(CONFIG.maxSpeed);
+                const speed = this.isLeader ? CONFIG.maxSpeed * 1.2 : CONFIG.maxSpeed;
+                this.velocity = this.velocity.limit(speed);
                 this.position = this.position.add(this.velocity);
                 this.acceleration = new Vector(0, 0);
             }
@@ -602,28 +833,19 @@
                     if (this.position.y > height) this.position.y = 0;
                     if (this.position.y < 0) this.position.y = height;
                 } else {
-                    // Bounce
                     const margin = 10;
                     const turnForce = 0.5;
 
-                    if (this.position.x < margin) {
-                        this.velocity.x += turnForce;
-                    }
-                    if (this.position.x > width - margin) {
-                        this.velocity.x -= turnForce;
-                    }
-                    if (this.position.y < margin) {
-                        this.velocity.y += turnForce;
-                    }
-                    if (this.position.y > height - margin) {
-                        this.velocity.y -= turnForce;
-                    }
+                    if (this.position.x < margin) this.velocity.x += turnForce;
+                    if (this.position.x > width - margin) this.velocity.x -= turnForce;
+                    if (this.position.y < margin) this.velocity.y += turnForce;
+                    if (this.position.y > height - margin) this.velocity.y -= turnForce;
                 }
             }
 
             draw(ctx) {
                 const angle = this.velocity.heading();
-                const size = 8;
+                const size = this.isLeader ? 12 : 8;
 
                 ctx.save();
                 ctx.translate(this.position.x, this.position.y);
@@ -635,7 +857,13 @@
                 ctx.lineTo(-size, -size * 0.5);
                 ctx.closePath();
 
-                ctx.fillStyle = '#00d9ff';
+                if (this.isLeader) {
+                    ctx.fillStyle = '#00ff64';
+                    ctx.shadowColor = '#00ff64';
+                    ctx.shadowBlur = 10;
+                } else {
+                    ctx.fillStyle = '#00d9ff';
+                }
                 ctx.fill();
 
                 ctx.restore();
@@ -661,6 +889,8 @@
         function init() {
             resize();
             boids = [];
+            leaderBoid = null;
+            predator = null;
 
             for (let i = 0; i < CONFIG.numBoids; i++) {
                 const x = Math.random() * width;
@@ -669,6 +899,7 @@
             }
 
             updateStats();
+            updateEntityStatus();
         }
 
         function updateStats() {
@@ -676,6 +907,11 @@
             document.getElementById('fpsVal').textContent = Math.round(fps);
             document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(1);
             document.getElementById('avgNeighbors').textContent = avgNeighbors.toFixed(1);
+        }
+
+        function updateEntityStatus() {
+            document.getElementById('leaderStatus').textContent = leaderBoid ? 'Active' : 'None';
+            document.getElementById('predatorStatus').textContent = predator ? 'Active' : 'None';
         }
 
         function calculateStats() {
@@ -693,19 +929,36 @@
             avgNeighbors = totalNeighbors / boids.length;
         }
 
+        function findNearestBoid(pos) {
+            let nearest = null;
+            let nearestDist = 30; // Click threshold
+
+            for (const boid of boids) {
+                const d = pos.dist(boid.position);
+                if (d < nearestDist) {
+                    nearestDist = d;
+                    nearest = boid;
+                }
+            }
+
+            return nearest;
+        }
+
         function drawMouseIndicator() {
-            if (!mouseDown || mouseMode === 'add') return;
+            if (!mouseDown) return;
 
-            ctx.beginPath();
-            ctx.arc(mousePos.x, mousePos.y, CONFIG.mouseRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = mouseMode === 'attract' ? 'rgba(0, 255, 100, 0.3)' : 'rgba(255, 71, 87, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+            if (mouseMode === 'attract' || mouseMode === 'repel') {
+                ctx.beginPath();
+                ctx.arc(mousePos.x, mousePos.y, CONFIG.mouseRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = mouseMode === 'attract' ? 'rgba(0, 255, 100, 0.3)' : 'rgba(255, 71, 87, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
 
-            ctx.beginPath();
-            ctx.arc(mousePos.x, mousePos.y, 8, 0, Math.PI * 2);
-            ctx.fillStyle = mouseMode === 'attract' ? '#00ff64' : '#ff4757';
-            ctx.fill();
+                ctx.beginPath();
+                ctx.arc(mousePos.x, mousePos.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = mouseMode === 'attract' ? '#00ff64' : '#ff4757';
+                ctx.fill();
+            }
         }
 
         function drawBoundaryIndicator() {
@@ -733,6 +986,14 @@
             drawBoundaryIndicator();
 
             if (!paused) {
+                // Update predator
+                if (predator) {
+                    predator.hunt(boids);
+                    predator.update();
+                    predator.edges(width, height);
+                }
+
+                // Update boids
                 for (const boid of boids) {
                     boid.flock(boids);
                     boid.update();
@@ -740,8 +1001,14 @@
                 }
             }
 
+            // Draw boids
             for (const boid of boids) {
                 boid.draw(ctx);
+            }
+
+            // Draw predator
+            if (predator) {
+                predator.draw(ctx);
             }
 
             drawMouseIndicator();
@@ -761,12 +1028,10 @@
             const preset = PRESETS[presetName];
             if (!preset) return;
 
-            // Update CONFIG
             Object.keys(preset).forEach(key => {
                 CONFIG[key] = preset[key];
             });
 
-            // Update UI sliders
             updateSliderDisplay('separationWeight', preset.separationWeight);
             updateSliderDisplay('alignmentWeight', preset.alignmentWeight);
             updateSliderDisplay('cohesionWeight', preset.cohesionWeight);
@@ -774,7 +1039,6 @@
             updateSliderDisplay('maxSpeed', preset.maxSpeed);
             updateSliderDisplay('maxForce', preset.maxForce);
 
-            // Update preset button states
             document.querySelectorAll('.preset-group .btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('preset' + presetName.charAt(0).toUpperCase() + presetName.slice(1)).classList.add('active');
         }
@@ -792,6 +1056,22 @@
             if (mouseMode === 'add') {
                 boids.push(new Boid(e.clientX, e.clientY));
                 updateStats();
+            } else if (mouseMode === 'leader') {
+                // Find and set leader
+                const clickedBoid = findNearestBoid(mousePos);
+                if (clickedBoid) {
+                    // Clear previous leader
+                    if (leaderBoid) {
+                        leaderBoid.isLeader = false;
+                    }
+                    clickedBoid.isLeader = true;
+                    leaderBoid = clickedBoid;
+                    updateEntityStatus();
+                }
+            } else if (mouseMode === 'predator') {
+                // Place predator
+                predator = new Predator(e.clientX, e.clientY);
+                updateEntityStatus();
             }
         });
 
@@ -828,6 +1108,19 @@
 
         document.getElementById('resetBtn').addEventListener('click', init);
 
+        document.getElementById('clearLeader').addEventListener('click', () => {
+            if (leaderBoid) {
+                leaderBoid.isLeader = false;
+                leaderBoid = null;
+                updateEntityStatus();
+            }
+        });
+
+        document.getElementById('clearPredator').addEventListener('click', () => {
+            predator = null;
+            updateEntityStatus();
+        });
+
         document.getElementById('hideBtn').addEventListener('click', () => {
             controls.classList.add('hidden');
         });
@@ -852,7 +1145,7 @@
         });
 
         // Mouse mode buttons
-        const modeButtons = ['modeAdd', 'modeAttract', 'modeRepel'];
+        const modeButtons = ['modeAdd', 'modeAttract', 'modeRepel', 'modeLeader', 'modePredator'];
         modeButtons.forEach(id => {
             document.getElementById(id).addEventListener('click', function() {
                 modeButtons.forEach(btnId => document.getElementById(btnId).classList.remove('active'));
@@ -880,7 +1173,10 @@
             { id: 'neighborRadius', key: 'neighborRadius' },
             { id: 'separationWeight', key: 'separationWeight' },
             { id: 'alignmentWeight', key: 'alignmentWeight' },
-            { id: 'cohesionWeight', key: 'cohesionWeight' }
+            { id: 'cohesionWeight', key: 'cohesionWeight' },
+            { id: 'leaderWeight', key: 'leaderWeight' },
+            { id: 'predatorWeight', key: 'predatorWeight' },
+            { id: 'predatorRadius', key: 'predatorRadius' }
         ];
 
         sliders.forEach(({ id, key }) => {
@@ -890,7 +1186,6 @@
             slider.addEventListener('input', function() {
                 CONFIG[key] = parseFloat(this.value);
                 display.textContent = this.value;
-                // Clear preset selection when manually adjusting
                 document.querySelectorAll('.preset-group .btn').forEach(btn => btn.classList.remove('active'));
             });
         });
