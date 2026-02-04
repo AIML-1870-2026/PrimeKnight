@@ -14,15 +14,225 @@
         body {
             overflow: hidden;
             background: #1a1a2e;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         canvas {
             display: block;
         }
+
+        #controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            color: #fff;
+            width: 280px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        #controls h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #00d9ff;
+        }
+
+        #controls h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+
+        .control-group label span {
+            color: #00d9ff;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00d9ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn-primary {
+            background: #00d9ff;
+            color: #1a1a2e;
+        }
+
+        .btn-secondary {
+            background: #444;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: #fff;
+        }
+
+        #info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+            color: #888;
+        }
+
+        #info p {
+            margin-bottom: 5px;
+        }
+
+        #toggle-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #00d9ff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+        }
+
+        #controls.hidden {
+            display: none;
+        }
+
+        #controls.hidden + #toggle-controls {
+            display: block;
+        }
+
+        .mouse-mode {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .mouse-mode .btn {
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .mouse-mode .btn.active {
+            outline: 2px solid #fff;
+        }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
+
+    <div id="controls">
+        <h2>Boids Simulation</h2>
+
+        <h3>Simulation</h3>
+        <div class="button-group">
+            <button id="pauseBtn" class="btn btn-primary">Pause</button>
+            <button id="resetBtn" class="btn btn-secondary">Reset</button>
+        </div>
+
+        <h3>Mouse Mode</h3>
+        <div class="mouse-mode">
+            <button id="modeAdd" class="btn btn-secondary active">Add</button>
+            <button id="modeAttract" class="btn btn-secondary">Attract</button>
+            <button id="modeRepel" class="btn btn-secondary">Repel</button>
+        </div>
+
+        <h3>Physics</h3>
+        <div class="control-group">
+            <label>Max Speed <span id="maxSpeedVal">4</span></label>
+            <input type="range" id="maxSpeed" min="1" max="10" step="0.5" value="4">
+        </div>
+        <div class="control-group">
+            <label>Max Force <span id="maxForceVal">0.1</span></label>
+            <input type="range" id="maxForce" min="0.01" max="0.5" step="0.01" value="0.1">
+        </div>
+
+        <h3>Radii</h3>
+        <div class="control-group">
+            <label>Separation <span id="separationRadiusVal">25</span>px</label>
+            <input type="range" id="separationRadius" min="10" max="100" step="5" value="25">
+        </div>
+        <div class="control-group">
+            <label>Neighbor <span id="neighborRadiusVal">50</span>px</label>
+            <input type="range" id="neighborRadius" min="20" max="200" step="10" value="50">
+        </div>
+
+        <h3>Behavior Weights</h3>
+        <div class="control-group">
+            <label>Separation <span id="separationWeightVal">1.5</span></label>
+            <input type="range" id="separationWeight" min="0" max="5" step="0.1" value="1.5">
+        </div>
+        <div class="control-group">
+            <label>Alignment <span id="alignmentWeightVal">1.0</span></label>
+            <input type="range" id="alignmentWeight" min="0" max="5" step="0.1" value="1.0">
+        </div>
+        <div class="control-group">
+            <label>Cohesion <span id="cohesionWeightVal">1.0</span></label>
+            <input type="range" id="cohesionWeight" min="0" max="5" step="0.1" value="1.0">
+        </div>
+
+        <div class="button-group">
+            <button id="hideBtn" class="btn btn-secondary">Hide Panel</button>
+        </div>
+
+        <div id="info">
+            <p>Boids: <span id="boidCount">150</span></p>
+            <p>Click canvas to add boids or interact</p>
+            <p>Press H to toggle this panel</p>
+        </div>
+    </div>
+
+    <button id="toggle-controls">Show Controls</button>
 
     <script>
         // ============================================
@@ -82,7 +292,7 @@
         }
 
         // ============================================
-        // Global Constants (Tunable)
+        // Global Configuration
         // ============================================
         const CONFIG = {
             numBoids: 150,
@@ -90,11 +300,20 @@
             maxForce: 0.1,
             separationRadius: 25,
             neighborRadius: 50,
-            // Behavior weights
             separationWeight: 1.5,
             alignmentWeight: 1.0,
-            cohesionWeight: 1.0
+            cohesionWeight: 1.0,
+            mouseRadius: 150,
+            mouseForce: 0.5
         };
+
+        // ============================================
+        // Simulation State
+        // ============================================
+        let paused = false;
+        let mouseMode = 'add'; // 'add', 'attract', 'repel'
+        let mousePos = new Vector(-1000, -1000);
+        let mouseDown = false;
 
         // ============================================
         // Boid Class
@@ -102,18 +321,15 @@
         class Boid {
             constructor(x, y) {
                 this.position = new Vector(x, y);
-                // Random initial velocity
                 const angle = Math.random() * Math.PI * 2;
                 this.velocity = new Vector(Math.cos(angle), Math.sin(angle)).mult(CONFIG.maxSpeed * 0.5);
                 this.acceleration = new Vector(0, 0);
             }
 
-            // Apply a force to the boid
             applyForce(force) {
                 this.acceleration = this.acceleration.add(force);
             }
 
-            // Separation: steer to avoid crowding local flockmates
             separation(boids) {
                 let steer = new Vector(0, 0);
                 let count = 0;
@@ -121,9 +337,7 @@
                 for (const other of boids) {
                     const d = this.position.dist(other.position);
                     if (d > 0 && d < CONFIG.separationRadius) {
-                        // Vector pointing away from neighbor
                         let diff = this.position.sub(other.position);
-                        // Weight by distance (closer = stronger)
                         diff = diff.normalize().div(d);
                         steer = steer.add(diff);
                         count++;
@@ -140,7 +354,6 @@
                 return steer;
             }
 
-            // Alignment: steer towards average heading of local flockmates
             alignment(boids) {
                 let sum = new Vector(0, 0);
                 let count = 0;
@@ -164,7 +377,6 @@
                 return new Vector(0, 0);
             }
 
-            // Cohesion: steer towards center of mass of local flockmates
             cohesion(boids) {
                 let sum = new Vector(0, 0);
                 let count = 0;
@@ -178,9 +390,7 @@
                 }
 
                 if (count > 0) {
-                    // Average position (center of mass)
                     sum = sum.div(count);
-                    // Vector towards center
                     let desired = sum.sub(this.position);
                     desired = desired.normalize().mult(CONFIG.maxSpeed);
                     let steer = desired.sub(this.velocity);
@@ -191,30 +401,44 @@
                 return new Vector(0, 0);
             }
 
-            // Apply all flocking rules
+            mouseInteraction() {
+                if (!mouseDown || mouseMode === 'add') return new Vector(0, 0);
+
+                const d = this.position.dist(mousePos);
+                if (d < CONFIG.mouseRadius && d > 0) {
+                    let force = this.position.sub(mousePos);
+                    force = force.normalize();
+                    // Stronger force when closer
+                    const strength = (1 - d / CONFIG.mouseRadius) * CONFIG.mouseForce;
+                    force = force.mult(strength);
+
+                    if (mouseMode === 'attract') {
+                        force = force.mult(-1);
+                    }
+                    return force;
+                }
+                return new Vector(0, 0);
+            }
+
             flock(boids) {
                 const sep = this.separation(boids).mult(CONFIG.separationWeight);
                 const ali = this.alignment(boids).mult(CONFIG.alignmentWeight);
                 const coh = this.cohesion(boids).mult(CONFIG.cohesionWeight);
+                const mouse = this.mouseInteraction();
 
                 this.applyForce(sep);
                 this.applyForce(ali);
                 this.applyForce(coh);
+                this.applyForce(mouse);
             }
 
-            // Update physics using Euler integration
             update() {
-                // Update velocity
                 this.velocity = this.velocity.add(this.acceleration);
-                // Limit speed
                 this.velocity = this.velocity.limit(CONFIG.maxSpeed);
-                // Update position
                 this.position = this.position.add(this.velocity);
-                // Reset acceleration
                 this.acceleration = new Vector(0, 0);
             }
 
-            // Wrap around edges
             edges(width, height) {
                 if (this.position.x > width) this.position.x = 0;
                 if (this.position.x < 0) this.position.x = width;
@@ -222,7 +446,6 @@
                 if (this.position.y < 0) this.position.y = height;
             }
 
-            // Render the boid as a triangle oriented to velocity
             draw(ctx) {
                 const angle = this.velocity.heading();
                 const size = 8;
@@ -231,7 +454,6 @@
                 ctx.translate(this.position.x, this.position.y);
                 ctx.rotate(angle);
 
-                // Draw triangle pointing in direction of movement
                 ctx.beginPath();
                 ctx.moveTo(size, 0);
                 ctx.lineTo(-size, size * 0.5);
@@ -252,7 +474,7 @@
         const ctx = canvas.getContext('2d');
 
         let width, height;
-        const boids = [];
+        let boids = [];
 
         function resize() {
             width = window.innerWidth;
@@ -263,33 +485,156 @@
 
         function init() {
             resize();
+            boids = [];
 
-            // Create boids
             for (let i = 0; i < CONFIG.numBoids; i++) {
                 const x = Math.random() * width;
                 const y = Math.random() * height;
                 boids.push(new Boid(x, y));
             }
+
+            updateBoidCount();
+        }
+
+        function updateBoidCount() {
+            document.getElementById('boidCount').textContent = boids.length;
+        }
+
+        function drawMouseIndicator() {
+            if (!mouseDown || mouseMode === 'add') return;
+
+            ctx.beginPath();
+            ctx.arc(mousePos.x, mousePos.y, CONFIG.mouseRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = mouseMode === 'attract' ? 'rgba(0, 255, 100, 0.3)' : 'rgba(255, 71, 87, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(mousePos.x, mousePos.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = mouseMode === 'attract' ? '#00ff64' : '#ff4757';
+            ctx.fill();
         }
 
         function animate() {
-            // Clear canvas
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, width, height);
 
-            // Update and draw each boid
+            if (!paused) {
+                for (const boid of boids) {
+                    boid.flock(boids);
+                    boid.update();
+                    boid.edges(width, height);
+                }
+            }
+
             for (const boid of boids) {
-                boid.flock(boids);
-                boid.update();
-                boid.edges(width, height);
                 boid.draw(ctx);
             }
+
+            drawMouseIndicator();
 
             requestAnimationFrame(animate);
         }
 
-        // Handle window resize
+        // ============================================
+        // Event Handlers
+        // ============================================
         window.addEventListener('resize', resize);
+
+        // Mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            mousePos = new Vector(e.clientX, e.clientY);
+
+            if (mouseMode === 'add') {
+                boids.push(new Boid(e.clientX, e.clientY));
+                updateBoidCount();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            mousePos = new Vector(e.clientX, e.clientY);
+
+            if (mouseDown && mouseMode === 'add') {
+                // Add boids while dragging
+                if (Math.random() < 0.3) {
+                    boids.push(new Boid(e.clientX, e.clientY));
+                    updateBoidCount();
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouseDown = false;
+            mousePos = new Vector(-1000, -1000);
+        });
+
+        // Control panel
+        const controls = document.getElementById('controls');
+        const toggleBtn = document.getElementById('toggle-controls');
+
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            paused = !paused;
+            this.textContent = paused ? 'Resume' : 'Pause';
+            this.classList.toggle('btn-danger', paused);
+            this.classList.toggle('btn-primary', !paused);
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', init);
+
+        document.getElementById('hideBtn').addEventListener('click', () => {
+            controls.classList.add('hidden');
+        });
+
+        toggleBtn.addEventListener('click', () => {
+            controls.classList.remove('hidden');
+        });
+
+        // Mouse mode buttons
+        const modeButtons = ['modeAdd', 'modeAttract', 'modeRepel'];
+        modeButtons.forEach(id => {
+            document.getElementById(id).addEventListener('click', function() {
+                modeButtons.forEach(btnId => document.getElementById(btnId).classList.remove('active'));
+                this.classList.add('active');
+                mouseMode = id.replace('mode', '').toLowerCase();
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') {
+                controls.classList.toggle('hidden');
+            }
+            if (e.key === ' ') {
+                e.preventDefault();
+                document.getElementById('pauseBtn').click();
+            }
+        });
+
+        // Slider controls
+        const sliders = [
+            { id: 'maxSpeed', key: 'maxSpeed' },
+            { id: 'maxForce', key: 'maxForce' },
+            { id: 'separationRadius', key: 'separationRadius' },
+            { id: 'neighborRadius', key: 'neighborRadius' },
+            { id: 'separationWeight', key: 'separationWeight' },
+            { id: 'alignmentWeight', key: 'alignmentWeight' },
+            { id: 'cohesionWeight', key: 'cohesionWeight' }
+        ];
+
+        sliders.forEach(({ id, key }) => {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(id + 'Val');
+
+            slider.addEventListener('input', function() {
+                CONFIG[key] = parseFloat(this.value);
+                display.textContent = this.value;
+            });
+        });
 
         // Start simulation
         init();
