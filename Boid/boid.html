@@ -314,8 +314,16 @@
                 <span class="stat-value" id="fpsVal">60</span>
             </div>
             <div class="stat-row">
-                <span class="stat-label">Boid Count</span>
+                <span class="stat-label">Total Boids</span>
                 <span class="stat-value" id="boidCount">150</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label" style="color: #00d9ff;">Blue</span>
+                <span class="stat-value" id="blueCount" style="color: #00d9ff;">100</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label" style="color: #b388ff;">Purple</span>
+                <span class="stat-value" id="purpleCount" style="color: #b388ff;">50</span>
             </div>
             <div class="stat-row">
                 <span class="stat-label">Avg Speed</span>
@@ -337,11 +345,19 @@
         <div class="special-entities">
             <div class="entity-row">
                 <div class="entity-indicator">
-                    <div class="entity-dot leader"></div>
-                    <span>Leader</span>
+                    <div class="entity-dot" style="background: #00d9ff;"></div>
+                    <span>Blue Leader</span>
                 </div>
                 <span id="leaderStatus">None</span>
                 <button id="clearLeader" class="btn btn-secondary btn-small">Clear</button>
+            </div>
+            <div class="entity-row">
+                <div class="entity-indicator">
+                    <div class="entity-dot" style="background: #b388ff;"></div>
+                    <span>Purple Leader</span>
+                </div>
+                <span id="purpleLeaderStatus">None</span>
+                <button id="clearPurpleLeader" class="btn btn-secondary btn-small">Clear</button>
             </div>
             <div class="entity-row">
                 <div class="entity-indicator">
@@ -353,11 +369,11 @@
             </div>
         </div>
 
-        <h3>Presets</h3>
+        <h3>Blue Presets</h3>
         <div class="preset-group">
-            <button id="presetSchooling" class="btn btn-preset" title="Fish-like schooling behavior">Schooling</button>
-            <button id="presetChaotic" class="btn btn-preset" title="Erratic swarm behavior">Chaotic</button>
-            <button id="presetCluster" class="btn btn-preset" title="Tight group formation">Cluster</button>
+            <button id="presetSchooling" class="btn btn-preset" title="Fish-like schooling behavior (blue only)">Schooling</button>
+            <button id="presetChaotic" class="btn btn-preset" title="Erratic swarm behavior (blue only)">Chaotic</button>
+            <button id="presetCluster" class="btn btn-preset" title="Tight group formation (blue only)">Cluster</button>
         </div>
 
         <h3>Boundary</h3>
@@ -368,7 +384,8 @@
 
         <h3>Mouse Mode</h3>
         <div class="mouse-mode">
-            <button id="modeAdd" class="btn btn-secondary active" title="Click to add new boids">Add</button>
+            <button id="modeAddBlue" class="btn btn-secondary active" style="background: #00d9ff33; border: 1px solid #00d9ff;" title="Click to add blue boids">Add Blue</button>
+            <button id="modeAddPurple" class="btn btn-secondary" style="background: #b388ff33; border: 1px solid #b388ff;" title="Click to add purple boids">Add Purple</button>
             <button id="modeAttract" class="btn btn-secondary" title="Hold to attract boids">Attract</button>
             <button id="modeRepel" class="btn btn-secondary" title="Hold to repel boids">Repel</button>
             <button id="modeLeader" class="btn btn-success" title="Click a boid to make it the leader">Set Leader</button>
@@ -377,46 +394,70 @@
 
         <div class="section-divider"></div>
 
-        <h3>Behavior Weights</h3>
-        <div class="control-group tooltip" data-tooltip="How strongly boids avoid crowding nearby flockmates">
+        <h3 style="color: #00d9ff;">Blue Species</h3>
+        <div class="control-group tooltip" data-tooltip="How strongly blue boids avoid crowding nearby flockmates">
             <label>Separation <span id="separationWeightVal">1.5</span></label>
             <input type="range" id="separationWeight" min="0" max="5" step="0.1" value="1.5">
         </div>
-        <div class="control-group tooltip" data-tooltip="How strongly boids steer toward average heading of neighbors">
+        <div class="control-group tooltip" data-tooltip="How strongly blue boids steer toward average heading of neighbors">
             <label>Alignment <span id="alignmentWeightVal">1.0</span></label>
             <input type="range" id="alignmentWeight" min="0" max="5" step="0.1" value="1.0">
         </div>
-        <div class="control-group tooltip" data-tooltip="How strongly boids steer toward center of nearby flockmates">
+        <div class="control-group tooltip" data-tooltip="How strongly blue boids steer toward center of nearby flockmates">
             <label>Cohesion <span id="cohesionWeightVal">1.0</span></label>
             <input type="range" id="cohesionWeight" min="0" max="5" step="0.1" value="1.0">
         </div>
-        <div class="control-group tooltip" data-tooltip="How strongly boids follow the leader (green boid)">
+        <div class="control-group tooltip" data-tooltip="Blue boids max velocity">
+            <label>Max Speed <span id="maxSpeedVal">4</span></label>
+            <input type="range" id="maxSpeed" min="1" max="10" step="0.5" value="4">
+        </div>
+        <div class="control-group tooltip" data-tooltip="Blue boids neighbor detection distance">
+            <label>Neighbor Radius <span id="neighborRadiusVal">50</span>px</label>
+            <input type="range" id="neighborRadius" min="20" max="200" step="10" value="50">
+        </div>
+
+        <div class="section-divider"></div>
+
+        <h3 style="color: #b388ff;">Purple Species</h3>
+        <div class="control-group tooltip" data-tooltip="How strongly purple boids avoid crowding nearby flockmates">
+            <label>Separation <span id="purpleSeparationWeightVal">1.0</span></label>
+            <input type="range" id="purpleSeparationWeight" min="0" max="5" step="0.1" value="1.0">
+        </div>
+        <div class="control-group tooltip" data-tooltip="How strongly purple boids steer toward average heading of neighbors">
+            <label>Alignment <span id="purpleAlignmentWeightVal">2.0</span></label>
+            <input type="range" id="purpleAlignmentWeight" min="0" max="5" step="0.1" value="2.0">
+        </div>
+        <div class="control-group tooltip" data-tooltip="How strongly purple boids steer toward center of nearby flockmates">
+            <label>Cohesion <span id="purpleCohesionWeightVal">1.5</span></label>
+            <input type="range" id="purpleCohesionWeight" min="0" max="5" step="0.1" value="1.5">
+        </div>
+        <div class="control-group tooltip" data-tooltip="Purple boids max velocity">
+            <label>Max Speed <span id="purpleMaxSpeedVal">3</span></label>
+            <input type="range" id="purpleMaxSpeed" min="1" max="10" step="0.5" value="3">
+        </div>
+        <div class="control-group tooltip" data-tooltip="Purple boids neighbor detection distance">
+            <label>Neighbor Radius <span id="purpleNeighborRadiusVal">70</span>px</label>
+            <input type="range" id="purpleNeighborRadius" min="20" max="200" step="10" value="70">
+        </div>
+
+        <div class="section-divider"></div>
+
+        <h3>Shared Settings</h3>
+        <div class="control-group tooltip" data-tooltip="Maximum steering force applied per frame (affects turn rate)">
+            <label>Max Force <span id="maxForceVal">0.1</span></label>
+            <input type="range" id="maxForce" min="0.01" max="0.5" step="0.01" value="0.1">
+        </div>
+        <div class="control-group tooltip" data-tooltip="Distance at which boids start avoiding each other">
+            <label>Separation Radius <span id="separationRadiusVal">25</span>px</label>
+            <input type="range" id="separationRadius" min="10" max="100" step="5" value="25">
+        </div>
+        <div class="control-group tooltip" data-tooltip="How strongly boids follow the leader">
             <label>Follow Leader <span id="leaderWeightVal">2.0</span></label>
             <input type="range" id="leaderWeight" min="0" max="5" step="0.1" value="2.0">
         </div>
         <div class="control-group tooltip" data-tooltip="How strongly boids flee from the predator (red)">
             <label>Evade Predator <span id="predatorWeightVal">3.0</span></label>
             <input type="range" id="predatorWeight" min="0" max="5" step="0.1" value="3.0">
-        </div>
-
-        <h3>Physics</h3>
-        <div class="control-group tooltip" data-tooltip="Maximum velocity a boid can reach">
-            <label>Max Speed <span id="maxSpeedVal">4</span></label>
-            <input type="range" id="maxSpeed" min="1" max="10" step="0.5" value="4">
-        </div>
-        <div class="control-group tooltip" data-tooltip="Maximum steering force applied per frame (affects turn rate)">
-            <label>Max Force <span id="maxForceVal">0.1</span></label>
-            <input type="range" id="maxForce" min="0.01" max="0.5" step="0.01" value="0.1">
-        </div>
-
-        <h3>Perception</h3>
-        <div class="control-group tooltip" data-tooltip="Distance at which boids detect neighbors for flocking">
-            <label>Neighbor Radius <span id="neighborRadiusVal">50</span>px</label>
-            <input type="range" id="neighborRadius" min="20" max="200" step="10" value="50">
-        </div>
-        <div class="control-group tooltip" data-tooltip="Distance at which boids start avoiding each other">
-            <label>Separation Radius <span id="separationRadiusVal">25</span>px</label>
-            <input type="range" id="separationRadius" min="10" max="100" step="5" value="25">
         </div>
         <div class="control-group tooltip" data-tooltip="Distance at which boids detect and flee from predator">
             <label>Predator Radius <span id="predatorRadiusVal">150</span>px</label>
@@ -496,7 +537,7 @@
         // Global Configuration
         // ============================================
         const CONFIG = {
-            numBoids: 150,
+            numBoids: 100,
             maxSpeed: 4,
             maxForce: 0.1,
             separationRadius: 25,
@@ -510,6 +551,21 @@
             mouseRadius: 150,
             mouseForce: 0.5,
             boundaryMode: 'wrap'
+        };
+
+        // Purple Species Configuration
+        const PURPLE_CONFIG = {
+            numBoids: 50,
+            maxSpeed: 3,
+            maxForce: 0.15,
+            separationRadius: 30,
+            neighborRadius: 70,
+            separationWeight: 1.0,
+            alignmentWeight: 2.0,
+            cohesionWeight: 1.5,
+            // Shared with CONFIG for leader/predator behavior
+            get leaderWeight() { return CONFIG.leaderWeight; },
+            get predatorWeight() { return CONFIG.predatorWeight; }
         };
 
         // Presets
@@ -544,12 +600,13 @@
         // Simulation State
         // ============================================
         let paused = false;
-        let mouseMode = 'add';
+        let mouseMode = 'addblue';
         let mousePos = new Vector(-1000, -1000);
         let mouseDown = false;
 
         // Special entities
-        let leaderBoid = null;
+        let leaderBoid = null;  // Blue leader
+        let purpleLeaderBoid = null;  // Purple leader
         let predator = null;
 
         // FPS tracking
@@ -663,13 +720,19 @@
         // Boid Class
         // ============================================
         class Boid {
-            constructor(x, y) {
+            constructor(x, y, species = 'blue') {
                 this.position = new Vector(x, y);
+                this.species = species;
+                const config = this.getConfig();
                 const angle = Math.random() * Math.PI * 2;
-                this.velocity = new Vector(Math.cos(angle), Math.sin(angle)).mult(CONFIG.maxSpeed * 0.5);
+                this.velocity = new Vector(Math.cos(angle), Math.sin(angle)).mult(config.maxSpeed * 0.5);
                 this.acceleration = new Vector(0, 0);
                 this.neighborCount = 0;
                 this.isLeader = false;
+            }
+
+            getConfig() {
+                return this.species === 'purple' ? PURPLE_CONFIG : CONFIG;
             }
 
             applyForce(force) {
@@ -677,12 +740,15 @@
             }
 
             separation(boids) {
+                const config = this.getConfig();
                 let steer = new Vector(0, 0);
                 let count = 0;
 
                 for (const other of boids) {
+                    // Only separate from same species
+                    if (other.species !== this.species) continue;
                     const d = this.position.dist(other.position);
-                    if (d > 0 && d < CONFIG.separationRadius) {
+                    if (d > 0 && d < config.separationRadius) {
                         let diff = this.position.sub(other.position);
                         diff = diff.normalize().div(d);
                         steer = steer.add(diff);
@@ -692,21 +758,24 @@
 
                 if (count > 0) {
                     steer = steer.div(count);
-                    steer = steer.normalize().mult(CONFIG.maxSpeed);
+                    steer = steer.normalize().mult(config.maxSpeed);
                     steer = steer.sub(this.velocity);
-                    steer = steer.limit(CONFIG.maxForce);
+                    steer = steer.limit(config.maxForce);
                 }
 
                 return steer;
             }
 
             alignment(boids) {
+                const config = this.getConfig();
                 let sum = new Vector(0, 0);
                 let count = 0;
 
                 for (const other of boids) {
+                    // Only align with same species
+                    if (other.species !== this.species) continue;
                     const d = this.position.dist(other.position);
-                    if (d > 0 && d < CONFIG.neighborRadius) {
+                    if (d > 0 && d < config.neighborRadius) {
                         sum = sum.add(other.velocity);
                         count++;
                     }
@@ -716,9 +785,9 @@
 
                 if (count > 0) {
                     sum = sum.div(count);
-                    sum = sum.normalize().mult(CONFIG.maxSpeed);
+                    sum = sum.normalize().mult(config.maxSpeed);
                     let steer = sum.sub(this.velocity);
-                    steer = steer.limit(CONFIG.maxForce);
+                    steer = steer.limit(config.maxForce);
                     return steer;
                 }
 
@@ -726,12 +795,15 @@
             }
 
             cohesion(boids) {
+                const config = this.getConfig();
                 let sum = new Vector(0, 0);
                 let count = 0;
 
                 for (const other of boids) {
+                    // Only cohere with same species
+                    if (other.species !== this.species) continue;
                     const d = this.position.dist(other.position);
-                    if (d > 0 && d < CONFIG.neighborRadius) {
+                    if (d > 0 && d < config.neighborRadius) {
                         sum = sum.add(other.position);
                         count++;
                     }
@@ -740,9 +812,9 @@
                 if (count > 0) {
                     sum = sum.div(count);
                     let desired = sum.sub(this.position);
-                    desired = desired.normalize().mult(CONFIG.maxSpeed);
+                    desired = desired.normalize().mult(config.maxSpeed);
                     let steer = desired.sub(this.velocity);
-                    steer = steer.limit(CONFIG.maxForce);
+                    steer = steer.limit(config.maxForce);
                     return steer;
                 }
 
@@ -750,14 +822,19 @@
             }
 
             followLeader() {
-                if (!leaderBoid || this.isLeader) return new Vector(0, 0);
+                if (this.isLeader) return new Vector(0, 0);
 
-                const d = this.position.dist(leaderBoid.position);
-                if (d < CONFIG.neighborRadius * 3) {
-                    let desired = leaderBoid.position.sub(this.position);
-                    desired = desired.normalize().mult(CONFIG.maxSpeed);
+                // Get the appropriate leader for this species
+                const myLeader = this.species === 'purple' ? purpleLeaderBoid : leaderBoid;
+                if (!myLeader) return new Vector(0, 0);
+
+                const config = this.getConfig();
+                const d = this.position.dist(myLeader.position);
+                if (d < config.neighborRadius * 3) {
+                    let desired = myLeader.position.sub(this.position);
+                    desired = desired.normalize().mult(config.maxSpeed);
                     let steer = desired.sub(this.velocity);
-                    steer = steer.limit(CONFIG.maxForce);
+                    steer = steer.limit(config.maxForce);
                     return steer;
                 }
 
@@ -767,15 +844,16 @@
             evadePredator() {
                 if (!predator) return new Vector(0, 0);
 
+                const config = this.getConfig();
                 const d = this.position.dist(predator.position);
                 if (d < CONFIG.predatorRadius) {
                     let flee = this.position.sub(predator.position);
                     flee = flee.normalize();
                     // Stronger flee force when closer
-                    const strength = (1 - d / CONFIG.predatorRadius) * CONFIG.maxSpeed * 2;
+                    const strength = (1 - d / CONFIG.predatorRadius) * config.maxSpeed * 2;
                     flee = flee.mult(strength);
                     let steer = flee.sub(this.velocity);
-                    steer = steer.limit(CONFIG.maxForce * 2);
+                    steer = steer.limit(config.maxForce * 2);
                     return steer;
                 }
 
@@ -783,7 +861,7 @@
             }
 
             mouseInteraction() {
-                if (!mouseDown || mouseMode === 'add' || mouseMode === 'leader' || mouseMode === 'predator') {
+                if (!mouseDown || mouseMode === 'addblue' || mouseMode === 'addpurple' || mouseMode === 'leader' || mouseMode === 'predator') {
                     return new Vector(0, 0);
                 }
 
@@ -803,12 +881,13 @@
             }
 
             flock(boids) {
-                const sep = this.separation(boids).mult(CONFIG.separationWeight);
-                const ali = this.alignment(boids).mult(CONFIG.alignmentWeight);
-                const coh = this.cohesion(boids).mult(CONFIG.cohesionWeight);
+                const config = this.getConfig();
+                const sep = this.separation(boids).mult(config.separationWeight);
+                const ali = this.alignment(boids).mult(config.alignmentWeight);
+                const coh = this.cohesion(boids).mult(config.cohesionWeight);
                 const mouse = this.mouseInteraction();
-                const leader = this.followLeader().mult(CONFIG.leaderWeight);
-                const evade = this.evadePredator().mult(CONFIG.predatorWeight);
+                const leader = this.followLeader().mult(config.leaderWeight);
+                const evade = this.evadePredator().mult(config.predatorWeight);
 
                 this.applyForce(sep);
                 this.applyForce(ali);
@@ -819,8 +898,9 @@
             }
 
             update() {
+                const config = this.getConfig();
                 this.velocity = this.velocity.add(this.acceleration);
-                const speed = this.isLeader ? CONFIG.maxSpeed * 1.2 : CONFIG.maxSpeed;
+                const speed = this.isLeader ? config.maxSpeed * 1.2 : config.maxSpeed;
                 this.velocity = this.velocity.limit(speed);
                 this.position = this.position.add(this.velocity);
                 this.acceleration = new Vector(0, 0);
@@ -861,6 +941,8 @@
                     ctx.fillStyle = '#00ff64';
                     ctx.shadowColor = '#00ff64';
                     ctx.shadowBlur = 10;
+                } else if (this.species === 'purple') {
+                    ctx.fillStyle = '#b388ff';
                 } else {
                     ctx.fillStyle = '#00d9ff';
                 }
@@ -890,12 +972,21 @@
             resize();
             boids = [];
             leaderBoid = null;
+            purpleLeaderBoid = null;
             predator = null;
 
+            // Create blue boids
             for (let i = 0; i < CONFIG.numBoids; i++) {
                 const x = Math.random() * width;
                 const y = Math.random() * height;
-                boids.push(new Boid(x, y));
+                boids.push(new Boid(x, y, 'blue'));
+            }
+
+            // Create purple boids
+            for (let i = 0; i < PURPLE_CONFIG.numBoids; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                boids.push(new Boid(x, y, 'purple'));
             }
 
             updateStats();
@@ -903,7 +994,11 @@
         }
 
         function updateStats() {
+            const blueCount = boids.filter(b => b.species === 'blue').length;
+            const purpleCount = boids.filter(b => b.species === 'purple').length;
             document.getElementById('boidCount').textContent = boids.length;
+            document.getElementById('blueCount').textContent = blueCount;
+            document.getElementById('purpleCount').textContent = purpleCount;
             document.getElementById('fpsVal').textContent = Math.round(fps);
             document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(1);
             document.getElementById('avgNeighbors').textContent = avgNeighbors.toFixed(1);
@@ -911,6 +1006,7 @@
 
         function updateEntityStatus() {
             document.getElementById('leaderStatus').textContent = leaderBoid ? 'Active' : 'None';
+            document.getElementById('purpleLeaderStatus').textContent = purpleLeaderBoid ? 'Active' : 'None';
             document.getElementById('predatorStatus').textContent = predator ? 'Active' : 'None';
         }
 
@@ -1053,19 +1149,31 @@
             mouseDown = true;
             mousePos = new Vector(e.clientX, e.clientY);
 
-            if (mouseMode === 'add') {
-                boids.push(new Boid(e.clientX, e.clientY));
+            if (mouseMode === 'addblue') {
+                boids.push(new Boid(e.clientX, e.clientY, 'blue'));
+                updateStats();
+            } else if (mouseMode === 'addpurple') {
+                boids.push(new Boid(e.clientX, e.clientY, 'purple'));
                 updateStats();
             } else if (mouseMode === 'leader') {
-                // Find and set leader
+                // Find and set leader based on species
                 const clickedBoid = findNearestBoid(mousePos);
                 if (clickedBoid) {
-                    // Clear previous leader
-                    if (leaderBoid) {
-                        leaderBoid.isLeader = false;
+                    if (clickedBoid.species === 'purple') {
+                        // Clear previous purple leader
+                        if (purpleLeaderBoid) {
+                            purpleLeaderBoid.isLeader = false;
+                        }
+                        clickedBoid.isLeader = true;
+                        purpleLeaderBoid = clickedBoid;
+                    } else {
+                        // Clear previous blue leader
+                        if (leaderBoid) {
+                            leaderBoid.isLeader = false;
+                        }
+                        clickedBoid.isLeader = true;
+                        leaderBoid = clickedBoid;
                     }
-                    clickedBoid.isLeader = true;
-                    leaderBoid = clickedBoid;
                     updateEntityStatus();
                 }
             } else if (mouseMode === 'predator') {
@@ -1078,9 +1186,10 @@
         canvas.addEventListener('mousemove', (e) => {
             mousePos = new Vector(e.clientX, e.clientY);
 
-            if (mouseDown && mouseMode === 'add') {
+            if (mouseDown && (mouseMode === 'addblue' || mouseMode === 'addpurple')) {
                 if (Math.random() < 0.3) {
-                    boids.push(new Boid(e.clientX, e.clientY));
+                    const species = mouseMode === 'addblue' ? 'blue' : 'purple';
+                    boids.push(new Boid(e.clientX, e.clientY, species));
                     updateStats();
                 }
             }
@@ -1116,6 +1225,14 @@
             }
         });
 
+        document.getElementById('clearPurpleLeader').addEventListener('click', () => {
+            if (purpleLeaderBoid) {
+                purpleLeaderBoid.isLeader = false;
+                purpleLeaderBoid = null;
+                updateEntityStatus();
+            }
+        });
+
         document.getElementById('clearPredator').addEventListener('click', () => {
             predator = null;
             updateEntityStatus();
@@ -1145,12 +1262,20 @@
         });
 
         // Mouse mode buttons
-        const modeButtons = ['modeAdd', 'modeAttract', 'modeRepel', 'modeLeader', 'modePredator'];
+        const modeButtons = ['modeAddBlue', 'modeAddPurple', 'modeAttract', 'modeRepel', 'modeLeader', 'modePredator'];
         modeButtons.forEach(id => {
             document.getElementById(id).addEventListener('click', function() {
                 modeButtons.forEach(btnId => document.getElementById(btnId).classList.remove('active'));
                 this.classList.add('active');
-                mouseMode = id.replace('mode', '').toLowerCase();
+                const mode = id.replace('mode', '').toLowerCase();
+                // Map addblue/addpurple to add mode with species
+                if (mode === 'addblue') {
+                    mouseMode = 'addblue';
+                } else if (mode === 'addpurple') {
+                    mouseMode = 'addpurple';
+                } else {
+                    mouseMode = mode;
+                }
             });
         });
 
@@ -1165,8 +1290,8 @@
             }
         });
 
-        // Slider controls
-        const sliders = [
+        // Blue species slider controls
+        const blueSliders = [
             { id: 'maxSpeed', key: 'maxSpeed' },
             { id: 'maxForce', key: 'maxForce' },
             { id: 'separationRadius', key: 'separationRadius' },
@@ -1179,7 +1304,7 @@
             { id: 'predatorRadius', key: 'predatorRadius' }
         ];
 
-        sliders.forEach(({ id, key }) => {
+        blueSliders.forEach(({ id, key }) => {
             const slider = document.getElementById(id);
             const display = document.getElementById(id + 'Val');
 
@@ -1187,6 +1312,25 @@
                 CONFIG[key] = parseFloat(this.value);
                 display.textContent = this.value;
                 document.querySelectorAll('.preset-group .btn').forEach(btn => btn.classList.remove('active'));
+            });
+        });
+
+        // Purple species slider controls
+        const purpleSliders = [
+            { id: 'purpleMaxSpeed', key: 'maxSpeed' },
+            { id: 'purpleNeighborRadius', key: 'neighborRadius' },
+            { id: 'purpleSeparationWeight', key: 'separationWeight' },
+            { id: 'purpleAlignmentWeight', key: 'alignmentWeight' },
+            { id: 'purpleCohesionWeight', key: 'cohesionWeight' }
+        ];
+
+        purpleSliders.forEach(({ id, key }) => {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(id + 'Val');
+
+            slider.addEventListener('input', function() {
+                PURPLE_CONFIG[key] = parseFloat(this.value);
+                display.textContent = this.value;
             });
         });
 
