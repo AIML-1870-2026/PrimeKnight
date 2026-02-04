@@ -29,7 +29,7 @@
             padding: 20px;
             border-radius: 10px;
             color: #fff;
-            width: 280px;
+            width: 300px;
             max-height: calc(100vh - 40px);
             overflow-y: auto;
             z-index: 1000;
@@ -59,6 +59,7 @@
             justify-content: space-between;
             margin-bottom: 4px;
             font-size: 13px;
+            cursor: help;
         }
 
         .control-group label span {
@@ -86,7 +87,7 @@
         .button-group {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
         .btn {
@@ -95,13 +96,14 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
         }
 
         .btn:hover {
-            opacity: 0.8;
+            opacity: 0.85;
+            transform: translateY(-1px);
         }
 
         .btn-primary {
@@ -119,16 +121,60 @@
             color: #fff;
         }
 
+        .btn-preset {
+            background: #2d3436;
+            color: #dfe6e9;
+            border: 1px solid #636e72;
+        }
+
+        .btn-preset:hover {
+            background: #636e72;
+        }
+
+        .btn-preset.active {
+            border-color: #00d9ff;
+            background: #00d9ff22;
+        }
+
+        #stats {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        #stats .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        #stats .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        #stats .stat-label {
+            color: #888;
+        }
+
+        #stats .stat-value {
+            color: #00d9ff;
+            font-weight: 600;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
         #info {
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #333;
-            font-size: 12px;
-            color: #888;
+            font-size: 11px;
+            color: #666;
         }
 
         #info p {
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         #toggle-controls {
@@ -143,6 +189,7 @@
             cursor: pointer;
             font-size: 14px;
             display: none;
+            z-index: 1000;
         }
 
         #controls.hidden {
@@ -153,19 +200,53 @@
             display: block;
         }
 
-        .mouse-mode {
+        .mouse-mode, .preset-group, .boundary-group {
             display: flex;
             gap: 5px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
-        .mouse-mode .btn {
-            padding: 8px;
-            font-size: 12px;
+        .mouse-mode .btn, .preset-group .btn, .boundary-group .btn {
+            padding: 8px 6px;
+            font-size: 11px;
         }
 
-        .mouse-mode .btn.active {
+        .mouse-mode .btn.active, .boundary-group .btn.active {
             outline: 2px solid #fff;
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 105%;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #000;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 1001;
+            max-width: 200px;
+            white-space: normal;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: #333;
+            margin: 15px 0;
         }
     </style>
 </head>
@@ -175,61 +256,95 @@
     <div id="controls">
         <h2>Boids Simulation</h2>
 
+        <!-- Stats Panel -->
+        <div id="stats">
+            <div class="stat-row">
+                <span class="stat-label">FPS</span>
+                <span class="stat-value" id="fpsVal">60</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Boid Count</span>
+                <span class="stat-value" id="boidCount">150</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Avg Speed</span>
+                <span class="stat-value" id="avgSpeed">0.0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Avg Neighbors</span>
+                <span class="stat-value" id="avgNeighbors">0.0</span>
+            </div>
+        </div>
+
         <h3>Simulation</h3>
         <div class="button-group">
             <button id="pauseBtn" class="btn btn-primary">Pause</button>
             <button id="resetBtn" class="btn btn-secondary">Reset</button>
         </div>
 
+        <h3>Presets</h3>
+        <div class="preset-group">
+            <button id="presetSchooling" class="btn btn-preset" title="Fish-like schooling behavior">Schooling</button>
+            <button id="presetChaotic" class="btn btn-preset" title="Erratic swarm behavior">Chaotic</button>
+            <button id="presetCluster" class="btn btn-preset" title="Tight group formation">Cluster</button>
+        </div>
+
+        <h3>Boundary</h3>
+        <div class="boundary-group">
+            <button id="boundaryWrap" class="btn btn-secondary active" title="Boids wrap to opposite edge">Wrap</button>
+            <button id="boundaryBounce" class="btn btn-secondary" title="Boids bounce off edges">Bounce</button>
+        </div>
+
         <h3>Mouse Mode</h3>
         <div class="mouse-mode">
-            <button id="modeAdd" class="btn btn-secondary active">Add</button>
-            <button id="modeAttract" class="btn btn-secondary">Attract</button>
-            <button id="modeRepel" class="btn btn-secondary">Repel</button>
+            <button id="modeAdd" class="btn btn-secondary active" title="Click to add new boids">Add</button>
+            <button id="modeAttract" class="btn btn-secondary" title="Hold to attract boids">Attract</button>
+            <button id="modeRepel" class="btn btn-secondary" title="Hold to repel boids">Repel</button>
         </div>
 
-        <h3>Physics</h3>
-        <div class="control-group">
-            <label>Max Speed <span id="maxSpeedVal">4</span></label>
-            <input type="range" id="maxSpeed" min="1" max="10" step="0.5" value="4">
-        </div>
-        <div class="control-group">
-            <label>Max Force <span id="maxForceVal">0.1</span></label>
-            <input type="range" id="maxForce" min="0.01" max="0.5" step="0.01" value="0.1">
-        </div>
-
-        <h3>Radii</h3>
-        <div class="control-group">
-            <label>Separation <span id="separationRadiusVal">25</span>px</label>
-            <input type="range" id="separationRadius" min="10" max="100" step="5" value="25">
-        </div>
-        <div class="control-group">
-            <label>Neighbor <span id="neighborRadiusVal">50</span>px</label>
-            <input type="range" id="neighborRadius" min="20" max="200" step="10" value="50">
-        </div>
+        <div class="section-divider"></div>
 
         <h3>Behavior Weights</h3>
-        <div class="control-group">
+        <div class="control-group tooltip" data-tooltip="How strongly boids avoid crowding nearby flockmates">
             <label>Separation <span id="separationWeightVal">1.5</span></label>
             <input type="range" id="separationWeight" min="0" max="5" step="0.1" value="1.5">
         </div>
-        <div class="control-group">
+        <div class="control-group tooltip" data-tooltip="How strongly boids steer toward average heading of neighbors">
             <label>Alignment <span id="alignmentWeightVal">1.0</span></label>
             <input type="range" id="alignmentWeight" min="0" max="5" step="0.1" value="1.0">
         </div>
-        <div class="control-group">
+        <div class="control-group tooltip" data-tooltip="How strongly boids steer toward center of nearby flockmates">
             <label>Cohesion <span id="cohesionWeightVal">1.0</span></label>
             <input type="range" id="cohesionWeight" min="0" max="5" step="0.1" value="1.0">
         </div>
 
+        <h3>Physics</h3>
+        <div class="control-group tooltip" data-tooltip="Maximum velocity a boid can reach">
+            <label>Max Speed <span id="maxSpeedVal">4</span></label>
+            <input type="range" id="maxSpeed" min="1" max="10" step="0.5" value="4">
+        </div>
+        <div class="control-group tooltip" data-tooltip="Maximum steering force applied per frame (affects turn rate)">
+            <label>Max Force <span id="maxForceVal">0.1</span></label>
+            <input type="range" id="maxForce" min="0.01" max="0.5" step="0.01" value="0.1">
+        </div>
+
+        <h3>Perception</h3>
+        <div class="control-group tooltip" data-tooltip="Distance at which boids detect neighbors for flocking">
+            <label>Neighbor Radius <span id="neighborRadiusVal">50</span>px</label>
+            <input type="range" id="neighborRadius" min="20" max="200" step="10" value="50">
+        </div>
+        <div class="control-group tooltip" data-tooltip="Distance at which boids start avoiding each other">
+            <label>Separation Radius <span id="separationRadiusVal">25</span>px</label>
+            <input type="range" id="separationRadius" min="10" max="100" step="5" value="25">
+        </div>
+
         <div class="button-group">
-            <button id="hideBtn" class="btn btn-secondary">Hide Panel</button>
+            <button id="hideBtn" class="btn btn-secondary">Hide Panel (H)</button>
         </div>
 
         <div id="info">
-            <p>Boids: <span id="boidCount">150</span></p>
             <p>Click canvas to add boids or interact</p>
-            <p>Press H to toggle this panel</p>
+            <p>Space = Pause | H = Toggle panel</p>
         </div>
     </div>
 
@@ -305,16 +420,54 @@
             alignmentWeight: 1.0,
             cohesionWeight: 1.0,
             mouseRadius: 150,
-            mouseForce: 0.5
+            mouseForce: 0.5,
+            boundaryMode: 'wrap' // 'wrap' or 'bounce'
+        };
+
+        // Presets
+        const PRESETS = {
+            schooling: {
+                separationWeight: 1.2,
+                alignmentWeight: 2.5,
+                cohesionWeight: 1.5,
+                neighborRadius: 80,
+                maxSpeed: 5,
+                maxForce: 0.15
+            },
+            chaotic: {
+                separationWeight: 2.0,
+                alignmentWeight: 0.3,
+                cohesionWeight: 0.3,
+                neighborRadius: 30,
+                maxSpeed: 6,
+                maxForce: 0.3
+            },
+            cluster: {
+                separationWeight: 1.0,
+                alignmentWeight: 0.8,
+                cohesionWeight: 3.0,
+                neighborRadius: 100,
+                maxSpeed: 3,
+                maxForce: 0.08
+            }
         };
 
         // ============================================
         // Simulation State
         // ============================================
         let paused = false;
-        let mouseMode = 'add'; // 'add', 'attract', 'repel'
+        let mouseMode = 'add';
         let mousePos = new Vector(-1000, -1000);
         let mouseDown = false;
+
+        // FPS tracking
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fps = 60;
+
+        // Stats
+        let avgSpeed = 0;
+        let avgNeighbors = 0;
 
         // ============================================
         // Boid Class
@@ -325,6 +478,7 @@
                 const angle = Math.random() * Math.PI * 2;
                 this.velocity = new Vector(Math.cos(angle), Math.sin(angle)).mult(CONFIG.maxSpeed * 0.5);
                 this.acceleration = new Vector(0, 0);
+                this.neighborCount = 0;
             }
 
             applyForce(force) {
@@ -366,6 +520,8 @@
                         count++;
                     }
                 }
+
+                this.neighborCount = count;
 
                 if (count > 0) {
                     sum = sum.div(count);
@@ -409,7 +565,6 @@
                 if (d < CONFIG.mouseRadius && d > 0) {
                     let force = this.position.sub(mousePos);
                     force = force.normalize();
-                    // Stronger force when closer
                     const strength = (1 - d / CONFIG.mouseRadius) * CONFIG.mouseForce;
                     force = force.mult(strength);
 
@@ -441,10 +596,29 @@
             }
 
             edges(width, height) {
-                if (this.position.x > width) this.position.x = 0;
-                if (this.position.x < 0) this.position.x = width;
-                if (this.position.y > height) this.position.y = 0;
-                if (this.position.y < 0) this.position.y = height;
+                if (CONFIG.boundaryMode === 'wrap') {
+                    if (this.position.x > width) this.position.x = 0;
+                    if (this.position.x < 0) this.position.x = width;
+                    if (this.position.y > height) this.position.y = 0;
+                    if (this.position.y < 0) this.position.y = height;
+                } else {
+                    // Bounce
+                    const margin = 10;
+                    const turnForce = 0.5;
+
+                    if (this.position.x < margin) {
+                        this.velocity.x += turnForce;
+                    }
+                    if (this.position.x > width - margin) {
+                        this.velocity.x -= turnForce;
+                    }
+                    if (this.position.y < margin) {
+                        this.velocity.y += turnForce;
+                    }
+                    if (this.position.y > height - margin) {
+                        this.velocity.y -= turnForce;
+                    }
+                }
             }
 
             draw(ctx) {
@@ -494,11 +668,29 @@
                 boids.push(new Boid(x, y));
             }
 
-            updateBoidCount();
+            updateStats();
         }
 
-        function updateBoidCount() {
+        function updateStats() {
             document.getElementById('boidCount').textContent = boids.length;
+            document.getElementById('fpsVal').textContent = Math.round(fps);
+            document.getElementById('avgSpeed').textContent = avgSpeed.toFixed(1);
+            document.getElementById('avgNeighbors').textContent = avgNeighbors.toFixed(1);
+        }
+
+        function calculateStats() {
+            if (boids.length === 0) return;
+
+            let totalSpeed = 0;
+            let totalNeighbors = 0;
+
+            for (const boid of boids) {
+                totalSpeed += boid.velocity.mag();
+                totalNeighbors += boid.neighborCount;
+            }
+
+            avgSpeed = totalSpeed / boids.length;
+            avgNeighbors = totalNeighbors / boids.length;
         }
 
         function drawMouseIndicator() {
@@ -516,9 +708,29 @@
             ctx.fill();
         }
 
-        function animate() {
+        function drawBoundaryIndicator() {
+            if (CONFIG.boundaryMode === 'bounce') {
+                ctx.strokeStyle = 'rgba(255, 71, 87, 0.3)';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(5, 5, width - 10, height - 10);
+            }
+        }
+
+        function animate(currentTime) {
+            // FPS calculation
+            frameCount++;
+            if (currentTime - lastTime >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+                calculateStats();
+                updateStats();
+            }
+
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, width, height);
+
+            drawBoundaryIndicator();
 
             if (!paused) {
                 for (const boid of boids) {
@@ -538,6 +750,36 @@
         }
 
         // ============================================
+        // UI Helper Functions
+        // ============================================
+        function updateSliderDisplay(id, value) {
+            document.getElementById(id + 'Val').textContent = value;
+            document.getElementById(id).value = value;
+        }
+
+        function applyPreset(presetName) {
+            const preset = PRESETS[presetName];
+            if (!preset) return;
+
+            // Update CONFIG
+            Object.keys(preset).forEach(key => {
+                CONFIG[key] = preset[key];
+            });
+
+            // Update UI sliders
+            updateSliderDisplay('separationWeight', preset.separationWeight);
+            updateSliderDisplay('alignmentWeight', preset.alignmentWeight);
+            updateSliderDisplay('cohesionWeight', preset.cohesionWeight);
+            updateSliderDisplay('neighborRadius', preset.neighborRadius);
+            updateSliderDisplay('maxSpeed', preset.maxSpeed);
+            updateSliderDisplay('maxForce', preset.maxForce);
+
+            // Update preset button states
+            document.querySelectorAll('.preset-group .btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('preset' + presetName.charAt(0).toUpperCase() + presetName.slice(1)).classList.add('active');
+        }
+
+        // ============================================
         // Event Handlers
         // ============================================
         window.addEventListener('resize', resize);
@@ -549,7 +791,7 @@
 
             if (mouseMode === 'add') {
                 boids.push(new Boid(e.clientX, e.clientY));
-                updateBoidCount();
+                updateStats();
             }
         });
 
@@ -557,10 +799,9 @@
             mousePos = new Vector(e.clientX, e.clientY);
 
             if (mouseDown && mouseMode === 'add') {
-                // Add boids while dragging
                 if (Math.random() < 0.3) {
                     boids.push(new Boid(e.clientX, e.clientY));
-                    updateBoidCount();
+                    updateStats();
                 }
             }
         });
@@ -593,6 +834,21 @@
 
         toggleBtn.addEventListener('click', () => {
             controls.classList.remove('hidden');
+        });
+
+        // Preset buttons
+        document.getElementById('presetSchooling').addEventListener('click', () => applyPreset('schooling'));
+        document.getElementById('presetChaotic').addEventListener('click', () => applyPreset('chaotic'));
+        document.getElementById('presetCluster').addEventListener('click', () => applyPreset('cluster'));
+
+        // Boundary buttons
+        const boundaryButtons = ['boundaryWrap', 'boundaryBounce'];
+        boundaryButtons.forEach(id => {
+            document.getElementById(id).addEventListener('click', function() {
+                boundaryButtons.forEach(btnId => document.getElementById(btnId).classList.remove('active'));
+                this.classList.add('active');
+                CONFIG.boundaryMode = id.replace('boundary', '').toLowerCase();
+            });
         });
 
         // Mouse mode buttons
@@ -634,12 +890,14 @@
             slider.addEventListener('input', function() {
                 CONFIG[key] = parseFloat(this.value);
                 display.textContent = this.value;
+                // Clear preset selection when manually adjusting
+                document.querySelectorAll('.preset-group .btn').forEach(btn => btn.classList.remove('active'));
             });
         });
 
         // Start simulation
         init();
-        animate();
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
