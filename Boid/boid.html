@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boids Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // ============================================
+        // Vector Class
+        // ============================================
+        class Vector {
+            constructor(x = 0, y = 0) {
+                this.x = x;
+                this.y = y;
+            }
+
+            add(v) {
+                return new Vector(this.x + v.x, this.y + v.y);
+            }
+
+            sub(v) {
+                return new Vector(this.x - v.x, this.y - v.y);
+            }
+
+            mult(scalar) {
+                return new Vector(this.x * scalar, this.y * scalar);
+            }
+
+            div(scalar) {
+                if (scalar === 0) return new Vector(0, 0);
+                return new Vector(this.x / scalar, this.y / scalar);
+            }
+
+            mag() {
+                return Math.sqrt(this.x * this.x + this.y * this.y);
+            }
+
+            normalize() {
+                const m = this.mag();
+                if (m === 0) return new Vector(0, 0);
+                return this.div(m);
+            }
+
+            limit(max) {
+                if (this.mag() > max) {
+                    return this.normalize().mult(max);
+                }
+                return new Vector(this.x, this.y);
+            }
+
+            dist(v) {
+                return this.sub(v).mag();
+            }
+
+            heading() {
+                return Math.atan2(this.y, this.x);
+            }
+
+            copy() {
+                return new Vector(this.x, this.y);
+            }
+        }
+
+        // ============================================
+        // Global Constants (Tunable)
+        // ============================================
+        const CONFIG = {
+            numBoids: 150,
+            maxSpeed: 4,
+            maxForce: 0.1,
+            separationRadius: 25,
+            neighborRadius: 50,
+            // Behavior weights
+            separationWeight: 1.5,
+            alignmentWeight: 1.0,
+            cohesionWeight: 1.0
+        };
+
+        // ============================================
+        // Boid Class
+        // ============================================
+        class Boid {
+            constructor(x, y) {
+                this.position = new Vector(x, y);
+                // Random initial velocity
+                const angle = Math.random() * Math.PI * 2;
+                this.velocity = new Vector(Math.cos(angle), Math.sin(angle)).mult(CONFIG.maxSpeed * 0.5);
+                this.acceleration = new Vector(0, 0);
+            }
+
+            // Apply a force to the boid
+            applyForce(force) {
+                this.acceleration = this.acceleration.add(force);
+            }
+
+            // Separation: steer to avoid crowding local flockmates
+            separation(boids) {
+                let steer = new Vector(0, 0);
+                let count = 0;
+
+                for (const other of boids) {
+                    const d = this.position.dist(other.position);
+                    if (d > 0 && d < CONFIG.separationRadius) {
+                        // Vector pointing away from neighbor
+                        let diff = this.position.sub(other.position);
+                        // Weight by distance (closer = stronger)
+                        diff = diff.normalize().div(d);
+                        steer = steer.add(diff);
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    steer = steer.div(count);
+                    steer = steer.normalize().mult(CONFIG.maxSpeed);
+                    steer = steer.sub(this.velocity);
+                    steer = steer.limit(CONFIG.maxForce);
+                }
+
+                return steer;
+            }
+
+            // Alignment: steer towards average heading of local flockmates
+            alignment(boids) {
+                let sum = new Vector(0, 0);
+                let count = 0;
+
+                for (const other of boids) {
+                    const d = this.position.dist(other.position);
+                    if (d > 0 && d < CONFIG.neighborRadius) {
+                        sum = sum.add(other.velocity);
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    sum = sum.div(count);
+                    sum = sum.normalize().mult(CONFIG.maxSpeed);
+                    let steer = sum.sub(this.velocity);
+                    steer = steer.limit(CONFIG.maxForce);
+                    return steer;
+                }
+
+                return new Vector(0, 0);
+            }
+
+            // Cohesion: steer towards center of mass of local flockmates
+            cohesion(boids) {
+                let sum = new Vector(0, 0);
+                let count = 0;
+
+                for (const other of boids) {
+                    const d = this.position.dist(other.position);
+                    if (d > 0 && d < CONFIG.neighborRadius) {
+                        sum = sum.add(other.position);
+                        count++;
+                    }
+                }
+
+                if (count > 0) {
+                    // Average position (center of mass)
+                    sum = sum.div(count);
+                    // Vector towards center
+                    let desired = sum.sub(this.position);
+                    desired = desired.normalize().mult(CONFIG.maxSpeed);
+                    let steer = desired.sub(this.velocity);
+                    steer = steer.limit(CONFIG.maxForce);
+                    return steer;
+                }
+
+                return new Vector(0, 0);
+            }
+
+            // Apply all flocking rules
+            flock(boids) {
+                const sep = this.separation(boids).mult(CONFIG.separationWeight);
+                const ali = this.alignment(boids).mult(CONFIG.alignmentWeight);
+                const coh = this.cohesion(boids).mult(CONFIG.cohesionWeight);
+
+                this.applyForce(sep);
+                this.applyForce(ali);
+                this.applyForce(coh);
+            }
+
+            // Update physics using Euler integration
+            update() {
+                // Update velocity
+                this.velocity = this.velocity.add(this.acceleration);
+                // Limit speed
+                this.velocity = this.velocity.limit(CONFIG.maxSpeed);
+                // Update position
+                this.position = this.position.add(this.velocity);
+                // Reset acceleration
+                this.acceleration = new Vector(0, 0);
+            }
+
+            // Wrap around edges
+            edges(width, height) {
+                if (this.position.x > width) this.position.x = 0;
+                if (this.position.x < 0) this.position.x = width;
+                if (this.position.y > height) this.position.y = 0;
+                if (this.position.y < 0) this.position.y = height;
+            }
+
+            // Render the boid as a triangle oriented to velocity
+            draw(ctx) {
+                const angle = this.velocity.heading();
+                const size = 8;
+
+                ctx.save();
+                ctx.translate(this.position.x, this.position.y);
+                ctx.rotate(angle);
+
+                // Draw triangle pointing in direction of movement
+                ctx.beginPath();
+                ctx.moveTo(size, 0);
+                ctx.lineTo(-size, size * 0.5);
+                ctx.lineTo(-size, -size * 0.5);
+                ctx.closePath();
+
+                ctx.fillStyle = '#00d9ff';
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // ============================================
+        // Simulation
+        // ============================================
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        const boids = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        function init() {
+            resize();
+
+            // Create boids
+            for (let i = 0; i < CONFIG.numBoids; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                boids.push(new Boid(x, y));
+            }
+        }
+
+        function animate() {
+            // Clear canvas
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, width, height);
+
+            // Update and draw each boid
+            for (const boid of boids) {
+                boid.flock(boids);
+                boid.update();
+                boid.edges(width, height);
+                boid.draw(ctx);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', resize);
+
+        // Start simulation
+        init();
+        animate();
+    </script>
+</body>
+</html>
