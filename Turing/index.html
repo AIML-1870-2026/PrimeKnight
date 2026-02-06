@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turing Patterns Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --accent: #00d4aa;
+            --accent-dim: #00a088;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border: #2a2a4e;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .mono {
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        select {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        select:hover {
+            border-color: var(--accent);
+        }
+
+        .info-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .info-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 57px);
+        }
+
+        .canvas-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            min-width: 0;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #simulationCanvas {
+            background: #000;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 1;
+            cursor: crosshair;
+        }
+
+        /* Parameter Space Map */
+        .param-map-section {
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .param-map-section.visible {
+            display: block;
+        }
+
+        .param-map-header {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        #parameterMap {
+            width: 100%;
+            max-width: 400px;
+            height: 200px;
+            cursor: crosshair;
+            border-radius: 4px;
+        }
+
+        .param-map-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            width: 300px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dim);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Sliders */
+        .slider-group {
+            margin-bottom: 14px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .slider-value {
+            color: var(--accent);
+            font-family: "JetBrains Mono", monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Toggle Buttons */
+        .toggle-group {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .toggle-btn:hover:not(.active) {
+            border-color: var(--accent);
+        }
+
+        /* Stats */
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+
+        .stat-value {
+            color: var(--accent);
+            font-family: "JetBrains Mono", monospace;
+        }
+
+        /* Info Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+
+        .modal h2 {
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .modal p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .modal-close {
+            margin-top: 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .control-panel {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border);
+                max-height: 50vh;
+            }
+
+            .canvas-section {
+                flex: none;
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Turing Patterns</div>
+        <div class="header-controls">
+            <select id="modelSelect">
+                <option value="gray-scott">Gray-Scott</option>
+                <option value="fitzhugh-nagumo">FitzHugh-Nagumo</option>
+                <option value="brusselator">Brusselator</option>
+                <option value="schnakenberg">Schnakenberg</option>
+            </select>
+            <select id="presetSelect">
+                <option value="">-- Presets --</option>
+            </select>
+            <button class="info-btn" id="infoBtn">?</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="canvas-section">
+            <div class="canvas-wrapper">
+                <canvas id="simulationCanvas"></canvas>
+            </div>
+            <div class="param-map-section" id="paramMapSection">
+                <div class="param-map-header">Parameter Space (F vs k) - Click to explore</div>
+                <canvas id="parameterMap"></canvas>
+                <div class="param-map-label">X: Feed rate (F) | Y: Kill rate (k)</div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-section">
+                <div class="section-header">Playback</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="playBtn">Play</button>
+                    <button class="btn btn-secondary" id="stepBtn">Step</button>
+                    <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Steps/Frame</span>
+                        <span class="slider-value" id="stepsValue">8</span>
+                    </div>
+                    <input type="range" id="stepsSlider" min="1" max="32" value="8">
+                </div>
+            </div>
+
+            <div class="control-section" id="paramsSection">
+                <div class="section-header">Parameters</div>
+                <!-- Dynamic parameter sliders inserted here -->
+            </div>
+
+            <div class="control-section">
+                <div class="section-header">Interaction</div>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" data-tool="seed">Seed V</button>
+                    <button class="toggle-btn" data-tool="erase">Erase</button>
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Brush Radius</span>
+                        <span class="slider-value" id="brushValue">10</span>
+                    </div>
+                    <input type="range" id="brushSlider" min="1" max="50" value="10">
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-header">Visualization</div>
+                <div class="toggle-group" id="channelGroup">
+                    <button class="toggle-btn" data-channel="u">U</button>
+                    <button class="toggle-btn active" data-channel="v">V</button>
+                    <button class="toggle-btn" data-channel="diff">U-V</button>
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Colormap</span>
+                    </div>
+                    <select id="colormapSelect" style="width: 100%;">
+                        <option value="viridis">Viridis</option>
+                        <option value="magma">Magma</option>
+                        <option value="inferno">Inferno</option>
+                        <option value="plasma">Plasma</option>
+                        <option value="turbo">Turbo</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="coolwarm">Coolwarm</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-header">Grid</div>
+                <div class="toggle-group" id="sizeGroup">
+                    <button class="toggle-btn" data-size="128">128</button>
+                    <button class="toggle-btn active" data-size="256">256</button>
+                    <button class="toggle-btn" data-size="512">512</button>
+                </div>
+                <div class="toggle-group" id="boundaryGroup">
+                    <button class="toggle-btn active" data-boundary="wrap">Wrap</button>
+                    <button class="toggle-btn" data-boundary="clamp">Clamp</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-header">Seed Pattern</div>
+                <div class="toggle-group" id="seedGroup">
+                    <button class="toggle-btn active" data-seed="center">Center</button>
+                    <button class="toggle-btn" data-seed="random">Random</button>
+                    <button class="toggle-btn" data-seed="ring">Ring</button>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <div class="section-header">Export</div>
+                <div class="btn-group">
+                    <button class="btn btn-secondary btn-small" id="screenshotBtn">Screenshot</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <span>FPS: <span class="stat-value" id="fpsValue">0</span></span>
+                <span>Steps: <span class="stat-value" id="stepCount">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>Turing Patterns Explorer</h2>
+            <p>This app simulates reaction-diffusion systems that produce Turing patterns - the same mechanisms that create spots on leopards, stripes on zebras, and patterns on seashells.</p>
+            <p><strong>How to use:</strong></p>
+            <p>1. Click on the canvas to seed chemical V and start pattern formation.<br>
+               2. Adjust parameters using the sliders to see different patterns emerge.<br>
+               3. Try different presets to see classic pattern types.<br>
+               4. The parameter space map (Gray-Scott only) lets you click to explore different regions.</p>
+            <p><strong>Models:</strong> Gray-Scott produces the widest variety of patterns. FitzHugh-Nagumo creates spirals and waves. Brusselator and Schnakenberg produce Turing instabilities.</p>
+            <button class="btn btn-primary modal-close" id="modalClose">Got it!</button>
+        </div>
+    </div>
+
+    <script>
+    // ============== SHADER CODE ==============
+    const vertexShaderSource = `#version 300 es
+        in vec2 a_position;
+        out vec2 v_texCoord;
+        void main() {
+            v_texCoord = a_position * 0.5 + 0.5;
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+    `;
+
+    const simulationShaderSource = `#version 300 es
+        precision highp float;
+
+        uniform sampler2D u_state;
+        uniform vec2 u_resolution;
+        uniform int u_model;
+        uniform float u_dt;
+        uniform int u_boundary;
+
+        // Gray-Scott params
+        uniform float u_F;
+        uniform float u_k;
+        uniform float u_Du;
+        uniform float u_Dv;
+
+        // FitzHugh-Nagumo params
+        uniform float u_epsilon;
+        uniform float u_a1;
+        uniform float u_a0;
+
+        // Brusselator params
+        uniform float u_A;
+        uniform float u_B;
+
+        // Schnakenberg params
+        uniform float u_a;
+        uniform float u_b;
+
+        // Mouse interaction
+        uniform vec2 u_mouse;
+        uniform float u_brushRadius;
+        uniform int u_mouseActive;
+
+        in vec2 v_texCoord;
+        out vec4 fragColor;
+
+        vec2 sampleState(vec2 offset) {
+            vec2 coord = v_texCoord + offset / u_resolution;
+            if (u_boundary == 0) {
+                coord = fract(coord);
+            } else {
+                coord = clamp(coord, 0.0, 1.0);
+            }
+            return texture(u_state, coord).rg;
+        }
+
+        vec2 laplacian() {
+            vec2 sum = vec2(0.0);
+            // Weighted 3x3 kernel
+            sum += sampleState(vec2(-1.0, -1.0)) * 0.05;
+            sum += sampleState(vec2( 0.0, -1.0)) * 0.20;
+            sum += sampleState(vec2( 1.0, -1.0)) * 0.05;
+            sum += sampleState(vec2(-1.0,  0.0)) * 0.20;
+            sum += sampleState(vec2( 0.0,  0.0)) * -1.0;
+            sum += sampleState(vec2( 1.0,  0.0)) * 0.20;
+            sum += sampleState(vec2(-1.0,  1.0)) * 0.05;
+            sum += sampleState(vec2( 0.0,  1.0)) * 0.20;
+            sum += sampleState(vec2( 1.0,  1.0)) * 0.05;
+            return sum;
+        }
+
+        void main() {
+            vec2 state = texture(u_state, v_texCoord).rg;
+            float U = state.r;
+            float V = state.g;
+
+            vec2 lap = laplacian();
+            float lapU = lap.r;
+            float lapV = lap.g;
+
+            float dU, dV;
+
+            if (u_model == 0) {
+                // Gray-Scott
+                float uvv = U * V * V;
+                dU = u_Du * lapU - uvv + u_F * (1.0 - U);
+                dV = u_Dv * lapV + uvv - (u_F + u_k) * V;
+            } else if (u_model == 1) {
+                // FitzHugh-Nagumo
+                dU = u_Du * lapU + U - U*U*U - V;
+                dV = u_Dv * lapV + u_epsilon * (U - u_a1 * V - u_a0);
+            } else if (u_model == 2) {
+                // Brusselator
+                float u2v = U * U * V;
+                dU = u_Du * lapU + u_A - (u_B + 1.0) * U + u2v;
+                dV = u_Dv * lapV + u_B * U - u2v;
+            } else {
+                // Schnakenberg
+                float u2v = U * U * V;
+                dU = u_Du * lapU + u_a - U + u2v;
+                dV = u_Dv * lapV + u_b - u2v;
+            }
+
+            U += dU * u_dt;
+            V += dV * u_dt;
+
+            // Mouse interaction
+            if (u_mouseActive > 0) {
+                float dist = distance(v_texCoord * u_resolution, u_mouse);
+                if (dist < u_brushRadius) {
+                    if (u_mouseActive == 1) {
+                        // Seed
+                        U = 0.0;
+                        V = 1.0;
+                    } else {
+                        // Erase
+                        U = 1.0;
+                        V = 0.0;
+                    }
+                }
+            }
+
+            U = clamp(U, 0.0, 1.0);
+            V = clamp(V, 0.0, 1.0);
+
+            fragColor = vec4(U, V, 0.0, 1.0);
+        }
+    `;
+
+    const displayShaderSource = `#version 300 es
+        precision highp float;
+
+        uniform sampler2D u_state;
+        uniform int u_channel;
+        uniform int u_colormap;
+
+        in vec2 v_texCoord;
+        out vec4 fragColor;
+
+        vec3 viridis(float t) {
+            const vec3 c0 = vec3(0.267, 0.004, 0.329);
+            const vec3 c1 = vec3(0.282, 0.140, 0.457);
+            const vec3 c2 = vec3(0.254, 0.265, 0.529);
+            const vec3 c3 = vec3(0.206, 0.371, 0.553);
+            const vec3 c4 = vec3(0.163, 0.471, 0.558);
+            const vec3 c5 = vec3(0.127, 0.566, 0.550);
+            const vec3 c6 = vec3(0.134, 0.658, 0.517);
+            const vec3 c7 = vec3(0.267, 0.749, 0.440);
+            const vec3 c8 = vec3(0.477, 0.821, 0.318);
+            const vec3 c9 = vec3(0.741, 0.873, 0.150);
+            const vec3 c10 = vec3(0.993, 0.906, 0.144);
+
+            t = clamp(t, 0.0, 1.0) * 10.0;
+            int i = int(floor(t));
+            float f = fract(t);
+
+            vec3 colors[11];
+            colors[0] = c0; colors[1] = c1; colors[2] = c2; colors[3] = c3;
+            colors[4] = c4; colors[5] = c5; colors[6] = c6; colors[7] = c7;
+            colors[8] = c8; colors[9] = c9; colors[10] = c10;
+
+            if (i >= 10) return c10;
+            return mix(colors[i], colors[i+1], f);
+        }
+
+        vec3 magma(float t) {
+            t = clamp(t, 0.0, 1.0);
+            vec3 c0 = vec3(0.001, 0.000, 0.014);
+            vec3 c1 = vec3(0.281, 0.100, 0.422);
+            vec3 c2 = vec3(0.550, 0.161, 0.506);
+            vec3 c3 = vec3(0.830, 0.283, 0.420);
+            vec3 c4 = vec3(0.994, 0.624, 0.427);
+            vec3 c5 = vec3(0.987, 0.991, 0.749);
+
+            if (t < 0.2) return mix(c0, c1, t * 5.0);
+            if (t < 0.4) return mix(c1, c2, (t - 0.2) * 5.0);
+            if (t < 0.6) return mix(c2, c3, (t - 0.4) * 5.0);
+            if (t < 0.8) return mix(c3, c4, (t - 0.6) * 5.0);
+            return mix(c4, c5, (t - 0.8) * 5.0);
+        }
+
+        vec3 inferno(float t) {
+            t = clamp(t, 0.0, 1.0);
+            vec3 c0 = vec3(0.001, 0.000, 0.014);
+            vec3 c1 = vec3(0.258, 0.038, 0.406);
+            vec3 c2 = vec3(0.578, 0.148, 0.404);
+            vec3 c3 = vec3(0.865, 0.317, 0.226);
+            vec3 c4 = vec3(0.987, 0.645, 0.039);
+            vec3 c5 = vec3(0.988, 0.998, 0.645);
+
+            if (t < 0.2) return mix(c0, c1, t * 5.0);
+            if (t < 0.4) return mix(c1, c2, (t - 0.2) * 5.0);
+            if (t < 0.6) return mix(c2, c3, (t - 0.4) * 5.0);
+            if (t < 0.8) return mix(c3, c4, (t - 0.6) * 5.0);
+            return mix(c4, c5, (t - 0.8) * 5.0);
+        }
+
+        vec3 plasma(float t) {
+            t = clamp(t, 0.0, 1.0);
+            vec3 c0 = vec3(0.050, 0.030, 0.528);
+            vec3 c1 = vec3(0.417, 0.001, 0.658);
+            vec3 c2 = vec3(0.694, 0.165, 0.564);
+            vec3 c3 = vec3(0.881, 0.392, 0.383);
+            vec3 c4 = vec3(0.988, 0.652, 0.195);
+            vec3 c5 = vec3(0.940, 0.975, 0.131);
+
+            if (t < 0.2) return mix(c0, c1, t * 5.0);
+            if (t < 0.4) return mix(c1, c2, (t - 0.2) * 5.0);
+            if (t < 0.6) return mix(c2, c3, (t - 0.4) * 5.0);
+            if (t < 0.8) return mix(c3, c4, (t - 0.6) * 5.0);
+            return mix(c4, c5, (t - 0.8) * 5.0);
+        }
+
+        vec3 turbo(float t) {
+            t = clamp(t, 0.0, 1.0);
+            vec3 c0 = vec3(0.190, 0.072, 0.232);
+            vec3 c1 = vec3(0.085, 0.398, 0.920);
+            vec3 c2 = vec3(0.133, 0.687, 0.700);
+            vec3 c3 = vec3(0.526, 0.859, 0.337);
+            vec3 c4 = vec3(0.912, 0.732, 0.148);
+            vec3 c5 = vec3(0.659, 0.118, 0.090);
+
+            if (t < 0.2) return mix(c0, c1, t * 5.0);
+            if (t < 0.4) return mix(c1, c2, (t - 0.2) * 5.0);
+            if (t < 0.6) return mix(c2, c3, (t - 0.4) * 5.0);
+            if (t < 0.8) return mix(c3, c4, (t - 0.6) * 5.0);
+            return mix(c4, c5, (t - 0.8) * 5.0);
+        }
+
+        vec3 grayscale(float t) {
+            return vec3(clamp(t, 0.0, 1.0));
+        }
+
+        vec3 coolwarm(float t) {
+            t = clamp(t, 0.0, 1.0);
+            vec3 cool = vec3(0.230, 0.299, 0.754);
+            vec3 mid = vec3(0.865, 0.865, 0.865);
+            vec3 warm = vec3(0.706, 0.016, 0.150);
+
+            if (t < 0.5) return mix(cool, mid, t * 2.0);
+            return mix(mid, warm, (t - 0.5) * 2.0);
+        }
+
+        void main() {
+            vec2 state = texture(u_state, v_texCoord).rg;
+            float val;
+
+            if (u_channel == 0) {
+                val = state.r;
+            } else if (u_channel == 1) {
+                val = state.g;
+            } else {
+                val = (state.r - state.g) * 0.5 + 0.5;
+            }
+
+            vec3 color;
+            if (u_colormap == 0) color = viridis(val);
+            else if (u_colormap == 1) color = magma(val);
+            else if (u_colormap == 2) color = inferno(val);
+            else if (u_colormap == 3) color = plasma(val);
+            else if (u_colormap == 4) color = turbo(val);
+            else if (u_colormap == 5) color = grayscale(val);
+            else color = coolwarm(val);
+
+            fragColor = vec4(color, 1.0);
+        }
+    `;
+
+    // ============== MODEL DEFINITIONS ==============
+    const models = {
+        'gray-scott': {
+            name: 'Gray-Scott',
+            params: {
+                F: { min: 0.0, max: 0.1, default: 0.055, step: 0.001, label: 'Feed (F)' },
+                k: { min: 0.0, max: 0.1, default: 0.062, step: 0.001, label: 'Kill (k)' },
+                Du: { min: 0.05, max: 1.0, default: 0.21, step: 0.01, label: 'Du' },
+                Dv: { min: 0.01, max: 0.5, default: 0.105, step: 0.005, label: 'Dv' }
+            },
+            dt: 1.0
+        },
+        'fitzhugh-nagumo': {
+            name: 'FitzHugh-Nagumo',
+            params: {
+                epsilon: { min: 0.001, max: 0.1, default: 0.02, step: 0.001, label: 'Epsilon' },
+                a1: { min: 0.0, max: 3.0, default: 2.0, step: 0.1, label: 'a1' },
+                a0: { min: 0.0, max: 1.0, default: 0.0, step: 0.05, label: 'a0' },
+                Du: { min: 0.05, max: 1.0, default: 0.21, step: 0.01, label: 'Du' },
+                Dv: { min: 0.01, max: 0.5, default: 0.105, step: 0.005, label: 'Dv' }
+            },
+            dt: 0.1
+        },
+        'brusselator': {
+            name: 'Brusselator',
+            params: {
+                A: { min: 0.5, max: 5.0, default: 4.5, step: 0.1, label: 'A' },
+                B: { min: 1.0, max: 12.0, default: 8.0, step: 0.1, label: 'B' },
+                Du: { min: 0.05, max: 1.0, default: 0.21, step: 0.01, label: 'Du' },
+                Dv: { min: 0.01, max: 0.5, default: 0.105, step: 0.005, label: 'Dv' }
+            },
+            dt: 0.01
+        },
+        'schnakenberg': {
+            name: 'Schnakenberg',
+            params: {
+                a: { min: 0.0, max: 1.0, default: 0.1, step: 0.01, label: 'a' },
+                b: { min: 0.5, max: 2.0, default: 0.9, step: 0.05, label: 'b' },
+                Du: { min: 0.05, max: 1.0, default: 0.21, step: 0.01, label: 'Du' },
+                Dv: { min: 0.01, max: 0.5, default: 0.105, step: 0.005, label: 'Dv' }
+            },
+            dt: 0.1
+        }
+    };
+
+    const presets = {
+        'gray-scott': [
+            { name: 'Spots', params: { F: 0.030, k: 0.062, Du: 0.21, Dv: 0.105 } },
+            { name: 'Stripes', params: { F: 0.042, k: 0.059, Du: 0.21, Dv: 0.105 } },
+            { name: 'Coral', params: { F: 0.062, k: 0.063, Du: 0.21, Dv: 0.105 } },
+            { name: 'Mitosis', params: { F: 0.028, k: 0.062, Du: 0.21, Dv: 0.105 } },
+            { name: 'Waves', params: { F: 0.014, k: 0.054, Du: 0.21, Dv: 0.105 } },
+            { name: 'Maze', params: { F: 0.029, k: 0.057, Du: 0.21, Dv: 0.105 } },
+            { name: 'Holes', params: { F: 0.039, k: 0.058, Du: 0.21, Dv: 0.105 } },
+            { name: 'Worms', params: { F: 0.078, k: 0.061, Du: 0.21, Dv: 0.105 } },
+            { name: 'Chaos', params: { F: 0.026, k: 0.051, Du: 0.21, Dv: 0.105 } }
+        ],
+        'fitzhugh-nagumo': [
+            { name: 'Spiral Waves', params: { epsilon: 0.02, a1: 2.0, a0: 0.0, Du: 0.21, Dv: 0.105 } },
+            { name: 'Target Waves', params: { epsilon: 0.01, a1: 1.5, a0: 0.1, Du: 0.21, Dv: 0.105 } },
+            { name: 'Breakup', params: { epsilon: 0.05, a1: 2.0, a0: 0.0, Du: 0.21, Dv: 0.105 } }
+        ],
+        'brusselator': [
+            { name: 'Turing Spots', params: { A: 4.5, B: 8.0, Du: 0.21, Dv: 0.105 } },
+            { name: 'Turing Stripes', params: { A: 4.5, B: 6.8, Du: 0.21, Dv: 0.105 } }
+        ],
+        'schnakenberg': [
+            { name: 'Spots', params: { a: 0.1, b: 0.9, Du: 0.21, Dv: 0.105 } },
+            { name: 'Mixed', params: { a: 0.05, b: 0.9, Du: 0.21, Dv: 0.105 } }
+        ]
+    };
+
+    // ============== APP STATE ==============
+    let state = {
+        model: 'gray-scott',
+        params: {},
+        gridSize: 256,
+        stepsPerFrame: 8,
+        boundary: 0, // 0: wrap, 1: clamp
+        channel: 1, // 0: U, 1: V, 2: diff
+        colormap: 0,
+        tool: 1, // 1: seed, 2: erase
+        brushRadius: 10,
+        seedPattern: 'center',
+        playing: false,
+        stepCount: 0
+    };
+
+    let gl, canvas;
+    let simProgram, displayProgram;
+    let textures = [];
+    let framebuffers = [];
+    let currentTexture = 0;
+    let quadBuffer;
+
+    let mouseDown = false;
+    let mousePos = { x: 0, y: 0 };
+
+    let lastTime = 0;
+    let frameCount = 0;
+    let fps = 0;
+
+    // ============== WEBGL SETUP ==============
+    function initWebGL() {
+        canvas = document.getElementById('simulationCanvas');
+        gl = canvas.getContext('webgl2');
+
+        if (!gl) {
+            alert('WebGL 2.0 is required but not supported by your browser.');
+            return false;
+        }
+
+        // Check for float texture support
+        const ext = gl.getExtension('EXT_color_buffer_float');
+        if (!ext) {
+            console.warn('EXT_color_buffer_float not supported, using fallback');
+        }
+
+        return true;
+    }
+
+    function createShader(type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    function createProgram(vertexSource, fragmentSource) {
+        const vertexShader = createShader(gl.VERTEX_SHADER, vertexSource);
+        const fragmentShader = createShader(gl.FRAGMENT_SHADER, fragmentSource);
+
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error('Program link error:', gl.getProgramInfoLog(program));
+            return null;
+        }
+        return program;
+    }
+
+    function createTexture() {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, state.gridSize, state.gridSize, 0, gl.RGBA, gl.FLOAT, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+        return texture;
+    }
+
+    function setupBuffers() {
+        quadBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1, 1, -1, -1, 1,
+            -1, 1, 1, -1, 1, 1
+        ]), gl.STATIC_DRAW);
+    }
+
+    function setupTextures() {
+        // Clean up old textures/framebuffers
+        textures.forEach(t => gl.deleteTexture(t));
+        framebuffers.forEach(fb => gl.deleteFramebuffer(fb));
+
+        textures = [createTexture(), createTexture()];
+        framebuffers = textures.map(texture => {
+            const fb = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+            return fb;
+        });
+
+        currentTexture = 0;
+        initializeState();
+    }
+
+    function initializeState() {
+        const data = new Float32Array(state.gridSize * state.gridSize * 4);
+        const model = models[state.model];
+
+        // Initialize based on model
+        if (state.model === 'brusselator') {
+            const A = state.params.A || model.params.A.default;
+            const B = state.params.B || model.params.B.default;
+            for (let i = 0; i < state.gridSize * state.gridSize; i++) {
+                data[i * 4] = A;
+                data[i * 4 + 1] = B / A;
+                data[i * 4 + 2] = 0;
+                data[i * 4 + 3] = 1;
+            }
+        } else if (state.model === 'schnakenberg') {
+            const a = state.params.a || model.params.a.default;
+            const b = state.params.b || model.params.b.default;
+            for (let i = 0; i < state.gridSize * state.gridSize; i++) {
+                data[i * 4] = a + b;
+                data[i * 4 + 1] = b / ((a + b) * (a + b));
+                data[i * 4 + 2] = 0;
+                data[i * 4 + 3] = 1;
+            }
+        } else {
+            // Gray-Scott and FitzHugh-Nagumo: U = 1, V = 0
+            for (let i = 0; i < state.gridSize * state.gridSize; i++) {
+                data[i * 4] = 1.0;
+                data[i * 4 + 1] = 0.0;
+                data[i * 4 + 2] = 0;
+                data[i * 4 + 3] = 1;
+            }
+        }
+
+        // Apply seed pattern
+        const cx = state.gridSize / 2;
+        const cy = state.gridSize / 2;
+
+        if (state.seedPattern === 'center') {
+            const size = Math.floor(state.gridSize / 10);
+            for (let y = cy - size; y < cy + size; y++) {
+                for (let x = cx - size; x < cx + size; x++) {
+                    const i = y * state.gridSize + x;
+                    data[i * 4] = 0.5;
+                    data[i * 4 + 1] = 0.25;
+                }
+            }
+        } else if (state.seedPattern === 'random') {
+            for (let i = 0; i < 100; i++) {
+                const x = Math.floor(Math.random() * state.gridSize);
+                const y = Math.floor(Math.random() * state.gridSize);
+                const radius = 3 + Math.random() * 5;
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        if (dx * dx + dy * dy <= radius * radius) {
+                            const px = (x + dx + state.gridSize) % state.gridSize;
+                            const py = (y + dy + state.gridSize) % state.gridSize;
+                            const idx = py * state.gridSize + px;
+                            data[idx * 4] = 0.5;
+                            data[idx * 4 + 1] = 0.25;
+                        }
+                    }
+                }
+            }
+        } else if (state.seedPattern === 'ring') {
+            const radius = state.gridSize / 4;
+            const thickness = 5;
+            for (let y = 0; y < state.gridSize; y++) {
+                for (let x = 0; x < state.gridSize; x++) {
+                    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                    if (Math.abs(dist - radius) < thickness) {
+                        const i = y * state.gridSize + x;
+                        data[i * 4] = 0.5;
+                        data[i * 4 + 1] = 0.25;
+                    }
+                }
+            }
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, textures[0]);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, state.gridSize, state.gridSize, gl.RGBA, gl.FLOAT, data);
+        gl.bindTexture(gl.TEXTURE_2D, textures[1]);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, state.gridSize, state.gridSize, gl.RGBA, gl.FLOAT, data);
+
+        state.stepCount = 0;
+        document.getElementById('stepCount').textContent = '0';
+    }
+
+    function simulate() {
+        gl.useProgram(simProgram);
+
+        const model = models[state.model];
+        const modelIndex = ['gray-scott', 'fitzhugh-nagumo', 'brusselator', 'schnakenberg'].indexOf(state.model);
+
+        // Set uniforms
+        gl.uniform2f(gl.getUniformLocation(simProgram, 'u_resolution'), state.gridSize, state.gridSize);
+        gl.uniform1i(gl.getUniformLocation(simProgram, 'u_model'), modelIndex);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dt'), model.dt);
+        gl.uniform1i(gl.getUniformLocation(simProgram, 'u_boundary'), state.boundary);
+
+        // Model-specific params
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_F'), state.params.F || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_k'), state.params.k || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_Du'), state.params.Du || 0.21);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_Dv'), state.params.Dv || 0.105);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_epsilon'), state.params.epsilon || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_a1'), state.params.a1 || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_a0'), state.params.a0 || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_A'), state.params.A || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_B'), state.params.B || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_a'), state.params.a || 0);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_b'), state.params.b || 0);
+
+        // Mouse interaction
+        gl.uniform2f(gl.getUniformLocation(simProgram, 'u_mouse'), mousePos.x, mousePos.y);
+        gl.uniform1f(gl.getUniformLocation(simProgram, 'u_brushRadius'), state.brushRadius);
+        gl.uniform1i(gl.getUniformLocation(simProgram, 'u_mouseActive'), mouseDown ? state.tool : 0);
+
+        // Position attribute
+        const posLoc = gl.getAttribLocation(simProgram, 'a_position');
+        gl.enableVertexAttribArray(posLoc);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+        // Ping-pong
+        for (let i = 0; i < state.stepsPerFrame; i++) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers[1 - currentTexture]);
+            gl.viewport(0, 0, state.gridSize, state.gridSize);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textures[currentTexture]);
+            gl.uniform1i(gl.getUniformLocation(simProgram, 'u_state'), 0);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            currentTexture = 1 - currentTexture;
+            state.stepCount++;
+        }
+    }
+
+    function render() {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        gl.useProgram(displayProgram);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textures[currentTexture]);
+        gl.uniform1i(gl.getUniformLocation(displayProgram, 'u_state'), 0);
+        gl.uniform1i(gl.getUniformLocation(displayProgram, 'u_channel'), state.channel);
+        gl.uniform1i(gl.getUniformLocation(displayProgram, 'u_colormap'), state.colormap);
+
+        const posLoc = gl.getAttribLocation(displayProgram, 'a_position');
+        gl.enableVertexAttribArray(posLoc);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+        gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    function updateCanvasSize() {
+        const wrapper = document.querySelector('.canvas-wrapper');
+        const size = Math.min(wrapper.clientWidth, wrapper.clientHeight) - 20;
+        canvas.width = state.gridSize;
+        canvas.height = state.gridSize;
+        canvas.style.width = size + 'px';
+        canvas.style.height = size + 'px';
+    }
+
+    // ============== PARAMETER MAP ==============
+    function setupParameterMap() {
+        const mapCanvas = document.getElementById('parameterMap');
+        const ctx = mapCanvas.getContext('2d');
+        const section = document.getElementById('paramMapSection');
+
+        if (state.model !== 'gray-scott') {
+            section.classList.remove('visible');
+            return;
+        }
+
+        section.classList.add('visible');
+        mapCanvas.width = 400;
+        mapCanvas.height = 200;
+
+        // Draw parameter space visualization
+        const imgData = ctx.createImageData(400, 200);
+
+        for (let y = 0; y < 200; y++) {
+            for (let x = 0; x < 400; x++) {
+                const F = x / 400 * 0.1;
+                const k = y / 200 * 0.1;
+
+                // Simplified classification based on Pearson's regions
+                let r, g, b;
+                const ratio = k / (F + 0.001);
+
+                if (F < 0.02 || k < 0.02) {
+                    r = 30; g = 30; b = 50; // Trivial region
+                } else if (ratio > 2.5) {
+                    r = 100; g = 50; b = 150; // Decay
+                } else if (ratio > 1.5 && F > 0.04) {
+                    r = 50; g = 150; b = 200; // Spots
+                } else if (ratio > 1.0 && F < 0.05) {
+                    r = 200; g = 100; b = 50; // Waves
+                } else if (F > 0.05 && k > 0.05) {
+                    r = 50; g = 200; b = 100; // Coral/Growth
+                } else if (F > 0.02 && F < 0.045) {
+                    r = 200; g = 50; b = 100; // Mitosis/Solitons
+                } else {
+                    r = 150; g = 150; b = 50; // Stripes/Maze
+                }
+
+                const i = (y * 400 + x) * 4;
+                imgData.data[i] = r;
+                imgData.data[i + 1] = g;
+                imgData.data[i + 2] = b;
+                imgData.data[i + 3] = 255;
+            }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        drawParamMapMarker();
+    }
+
+    function drawParamMapMarker() {
+        if (state.model !== 'gray-scott') return;
+
+        const mapCanvas = document.getElementById('parameterMap');
+        const ctx = mapCanvas.getContext('2d');
+
+        setupParameterMap(); // Redraw base
+
+        const F = state.params.F || 0.055;
+        const k = state.params.k || 0.062;
+        const x = (F / 0.1) * 400;
+        const y = (k / 0.1) * 200;
+
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#00d4aa';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // ============== UI SETUP ==============
+    function setupControls() {
+        // Model selector
+        document.getElementById('modelSelect').addEventListener('change', (e) => {
+            state.model = e.target.value;
+            loadModelDefaults();
+            buildParamSliders();
+            updatePresetList();
+            setupParameterMap();
+            setupTextures();
+        });
+
+        // Preset selector
+        document.getElementById('presetSelect').addEventListener('change', (e) => {
+            const presetIndex = parseInt(e.target.value);
+            if (!isNaN(presetIndex)) {
+                const preset = presets[state.model][presetIndex];
+                Object.assign(state.params, preset.params);
+                buildParamSliders();
+                drawParamMapMarker();
+            }
+        });
+
+        // Play/Pause
+        document.getElementById('playBtn').addEventListener('click', () => {
+            state.playing = !state.playing;
+            document.getElementById('playBtn').textContent = state.playing ? 'Pause' : 'Play';
+        });
+
+        // Step
+        document.getElementById('stepBtn').addEventListener('click', () => {
+            simulate();
+            render();
+            document.getElementById('stepCount').textContent = state.stepCount;
+        });
+
+        // Reset
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            initializeState();
+            render();
+        });
+
+        // Steps per frame
+        document.getElementById('stepsSlider').addEventListener('input', (e) => {
+            state.stepsPerFrame = parseInt(e.target.value);
+            document.getElementById('stepsValue').textContent = state.stepsPerFrame;
+        });
+
+        // Brush radius
+        document.getElementById('brushSlider').addEventListener('input', (e) => {
+            state.brushRadius = parseInt(e.target.value);
+            document.getElementById('brushValue').textContent = state.brushRadius;
+        });
+
+        // Tool selection
+        document.querySelectorAll('[data-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.tool = btn.dataset.tool === 'seed' ? 1 : 2;
+            });
+        });
+
+        // Channel selection
+        document.querySelectorAll('[data-channel]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-channel]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.channel = { u: 0, v: 1, diff: 2 }[btn.dataset.channel];
+            });
+        });
+
+        // Colormap
+        document.getElementById('colormapSelect').addEventListener('change', (e) => {
+            state.colormap = e.target.selectedIndex;
+        });
+
+        // Grid size
+        document.querySelectorAll('[data-size]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-size]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.gridSize = parseInt(btn.dataset.size);
+                updateCanvasSize();
+                setupTextures();
+            });
+        });
+
+        // Boundary
+        document.querySelectorAll('[data-boundary]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-boundary]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.boundary = btn.dataset.boundary === 'wrap' ? 0 : 1;
+            });
+        });
+
+        // Seed pattern
+        document.querySelectorAll('[data-seed]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-seed]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.seedPattern = btn.dataset.seed;
+            });
+        });
+
+        // Screenshot
+        document.getElementById('screenshotBtn').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `turing-${state.model}-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Info modal
+        document.getElementById('infoBtn').addEventListener('click', () => {
+            document.getElementById('modalOverlay').classList.add('visible');
+        });
+        document.getElementById('modalClose').addEventListener('click', () => {
+            document.getElementById('modalOverlay').classList.remove('visible');
+        });
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modalOverlay')) {
+                document.getElementById('modalOverlay').classList.remove('visible');
+            }
+        });
+
+        // Parameter map click
+        document.getElementById('parameterMap').addEventListener('click', (e) => {
+            if (state.model !== 'gray-scott') return;
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            state.params.F = (x / rect.width) * 0.1;
+            state.params.k = (y / rect.height) * 0.1;
+            buildParamSliders();
+            drawParamMapMarker();
+        });
+
+        // Canvas mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            updateMousePos(e);
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            updateMousePos(e);
+        });
+        canvas.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+        canvas.addEventListener('mouseleave', () => {
+            mouseDown = false;
+        });
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            mouseDown = true;
+            updateMousePos(e.touches[0]);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            updateMousePos(e.touches[0]);
+        });
+        canvas.addEventListener('touchend', () => {
+            mouseDown = false;
+        });
+
+        window.addEventListener('resize', updateCanvasSize);
+    }
+
+    function updateMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = 1 - (e.clientY - rect.top) / rect.height;
+        mousePos.x = x * state.gridSize;
+        mousePos.y = y * state.gridSize;
+    }
+
+    function loadModelDefaults() {
+        const model = models[state.model];
+        state.params = {};
+        for (const [key, config] of Object.entries(model.params)) {
+            state.params[key] = config.default;
+        }
+    }
+
+    function buildParamSliders() {
+        const section = document.getElementById('paramsSection');
+        const model = models[state.model];
+
+        // Keep section header
+        section.innerHTML = '<div class="section-header">Parameters</div>';
+
+        for (const [key, config] of Object.entries(model.params)) {
+            const value = state.params[key] !== undefined ? state.params[key] : config.default;
+            const div = document.createElement('div');
+            div.className = 'slider-group';
+            div.innerHTML = `
+                <div class="slider-label">
+                    <span>${config.label}</span>
+                    <span class="slider-value" id="${key}Value">${value.toFixed(3)}</span>
+                </div>
+                <input type="range" id="${key}Slider"
+                    min="${config.min}" max="${config.max}"
+                    step="${config.step}" value="${value}">
+            `;
+            section.appendChild(div);
+
+            const slider = div.querySelector('input');
+            slider.addEventListener('input', () => {
+                state.params[key] = parseFloat(slider.value);
+                document.getElementById(`${key}Value`).textContent = state.params[key].toFixed(3);
+                if (key === 'F' || key === 'k') {
+                    drawParamMapMarker();
+                }
+            });
+        }
+    }
+
+    function updatePresetList() {
+        const select = document.getElementById('presetSelect');
+        select.innerHTML = '<option value="">-- Presets --</option>';
+
+        const modelPresets = presets[state.model] || [];
+        modelPresets.forEach((preset, i) => {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = preset.name;
+            select.appendChild(option);
+        });
+    }
+
+    // ============== ANIMATION LOOP ==============
+    function animate(time) {
+        // FPS calculation
+        frameCount++;
+        if (time - lastTime >= 1000) {
+            fps = frameCount;
+            frameCount = 0;
+            lastTime = time;
+            document.getElementById('fpsValue').textContent = fps;
+        }
+
+        if (state.playing || mouseDown) {
+            simulate();
+            document.getElementById('stepCount').textContent = state.stepCount;
+        }
+        render();
+
+        requestAnimationFrame(animate);
+    }
+
+    // ============== INIT ==============
+    function init() {
+        if (!initWebGL()) return;
+
+        simProgram = createProgram(vertexShaderSource, simulationShaderSource);
+        displayProgram = createProgram(vertexShaderSource, displayShaderSource);
+
+        if (!simProgram || !displayProgram) {
+            console.error('Failed to create shader programs');
+            return;
+        }
+
+        setupBuffers();
+        loadModelDefaults();
+        updateCanvasSize();
+        setupTextures();
+        setupControls();
+        buildParamSliders();
+        updatePresetList();
+        setupParameterMap();
+
+        requestAnimationFrame(animate);
+    }
+
+    init();
+    </script>
+</body>
+</html>
