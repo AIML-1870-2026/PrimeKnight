@@ -392,7 +392,7 @@
             <div class="control-section">
                 <div class="section-header">Playback</div>
                 <div class="btn-group">
-                    <button class="btn btn-primary" id="playBtn">Play</button>
+                    <button class="btn btn-primary" id="playBtn">Pause</button>
                     <button class="btn btn-secondary" id="stepBtn">Step</button>
                     <button class="btn btn-secondary" id="resetBtn">Reset</button>
                 </div>
@@ -851,7 +851,7 @@
         tool: 1, // 1: seed, 2: erase
         brushRadius: 10,
         seedPattern: 'center',
-        playing: false,
+        playing: true, // Start playing immediately
         stepCount: 0
     };
 
@@ -991,42 +991,51 @@
         const cx = state.gridSize / 2;
         const cy = state.gridSize / 2;
 
+        // Add small noise to break symmetry
+        for (let i = 0; i < state.gridSize * state.gridSize; i++) {
+            data[i * 4] += (Math.random() - 0.5) * 0.01;
+            data[i * 4 + 1] += Math.random() * 0.01;
+        }
+
         if (state.seedPattern === 'center') {
-            const size = Math.floor(state.gridSize / 10);
+            const size = Math.floor(state.gridSize / 8);
             for (let y = cy - size; y < cy + size; y++) {
                 for (let x = cx - size; x < cx + size; x++) {
-                    const i = y * state.gridSize + x;
-                    data[i * 4] = 0.5;
-                    data[i * 4 + 1] = 0.25;
+                    if (x >= 0 && x < state.gridSize && y >= 0 && y < state.gridSize) {
+                        const i = y * state.gridSize + x;
+                        // Strong seed: low U, high V
+                        data[i * 4] = 0.0;
+                        data[i * 4 + 1] = 1.0;
+                    }
                 }
             }
         } else if (state.seedPattern === 'random') {
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 50; i++) {
                 const x = Math.floor(Math.random() * state.gridSize);
                 const y = Math.floor(Math.random() * state.gridSize);
-                const radius = 3 + Math.random() * 5;
+                const radius = 5 + Math.random() * 8;
                 for (let dy = -radius; dy <= radius; dy++) {
                     for (let dx = -radius; dx <= radius; dx++) {
                         if (dx * dx + dy * dy <= radius * radius) {
-                            const px = (x + dx + state.gridSize) % state.gridSize;
-                            const py = (y + dy + state.gridSize) % state.gridSize;
+                            const px = (x + Math.floor(dx) + state.gridSize) % state.gridSize;
+                            const py = (y + Math.floor(dy) + state.gridSize) % state.gridSize;
                             const idx = py * state.gridSize + px;
-                            data[idx * 4] = 0.5;
-                            data[idx * 4 + 1] = 0.25;
+                            data[idx * 4] = 0.0;
+                            data[idx * 4 + 1] = 1.0;
                         }
                     }
                 }
             }
         } else if (state.seedPattern === 'ring') {
             const radius = state.gridSize / 4;
-            const thickness = 5;
+            const thickness = 8;
             for (let y = 0; y < state.gridSize; y++) {
                 for (let x = 0; x < state.gridSize; x++) {
                     const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
                     if (Math.abs(dist - radius) < thickness) {
                         const i = y * state.gridSize + x;
-                        data[i * 4] = 0.5;
-                        data[i * 4 + 1] = 0.25;
+                        data[i * 4] = 0.0;
+                        data[i * 4 + 1] = 1.0;
                     }
                 }
             }
