@@ -1182,8 +1182,13 @@
         }
 
         ctx.putImageData(imgData, 0, 0);
+
+        // Store the base image for marker redraws
+        paramMapBaseImage = ctx.getImageData(0, 0, 400, 200);
         drawParamMapMarker();
     }
+
+    let paramMapBaseImage = null;
 
     function drawParamMapMarker() {
         if (state.model !== 'gray-scott') return;
@@ -1191,7 +1196,10 @@
         const mapCanvas = document.getElementById('parameterMap');
         const ctx = mapCanvas.getContext('2d');
 
-        setupParameterMap(); // Redraw base
+        // Restore base image instead of calling setupParameterMap (avoids recursion)
+        if (paramMapBaseImage) {
+            ctx.putImageData(paramMapBaseImage, 0, 0);
+        }
 
         const F = state.params.F || 0.055;
         const k = state.params.k || 0.062;
