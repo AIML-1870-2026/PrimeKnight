@@ -170,6 +170,53 @@
             margin-bottom: 12px;
             padding-bottom: 6px;
             border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .help-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 10px;
+            cursor: help;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .help-icon:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .help-icon .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 24px;
+            right: 0;
+            width: 220px;
+            padding: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: normal;
+            text-transform: none;
+            letter-spacing: normal;
+            color: var(--text-primary);
+            line-height: 1.4;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .help-icon:hover .tooltip {
+            display: block;
         }
 
         /* Buttons */
@@ -390,7 +437,10 @@
 
         <div class="control-panel">
             <div class="control-section">
-                <div class="section-header">Playback</div>
+                <div class="section-header">
+                    <span>Playback</span>
+                    <span class="help-icon">i<div class="tooltip"><b>Play/Pause:</b> Start or stop the simulation.<br><b>Step:</b> Advance one frame while paused.<br><b>Reset:</b> Clear and restart with initial pattern.<br><b>Steps/Frame:</b> How many calculations per animation frame. Higher = faster pattern evolution.</div></span>
+                </div>
                 <div class="btn-group">
                     <button class="btn btn-primary" id="playBtn">Pause</button>
                     <button class="btn btn-secondary" id="stepBtn">Step</button>
@@ -406,12 +456,18 @@
             </div>
 
             <div class="control-section" id="paramsSection">
-                <div class="section-header">Parameters</div>
+                <div class="section-header">
+                    <span>Parameters</span>
+                    <span class="help-icon">i<div class="tooltip"><b>F (Feed):</b> Rate at which chemical U is added. Higher = more activity.<br><b>k (Kill):</b> Rate at which chemical V decays. Controls pattern type.<br><b>Du/Dv:</b> How fast each chemical spreads. The ratio between them determines pattern formation.</div></span>
+                </div>
                 <!-- Dynamic parameter sliders inserted here -->
             </div>
 
             <div class="control-section">
-                <div class="section-header">Interaction</div>
+                <div class="section-header">
+                    <span>Interaction</span>
+                    <span class="help-icon">i<div class="tooltip"><b>Seed V:</b> Click/drag on canvas to add chemical V, which triggers pattern formation.<br><b>Erase:</b> Click/drag to reset areas back to the starting state.<br><b>Brush Radius:</b> Size of your painting tool in pixels.</div></span>
+                </div>
                 <div class="toggle-group">
                     <button class="toggle-btn active" data-tool="seed">Seed V</button>
                     <button class="toggle-btn" data-tool="erase">Erase</button>
@@ -426,7 +482,10 @@
             </div>
 
             <div class="control-section">
-                <div class="section-header">Visualization</div>
+                <div class="section-header">
+                    <span>Visualization</span>
+                    <span class="help-icon">i<div class="tooltip"><b>U/V:</b> Show concentration of chemical U or V. V usually shows the patterns best.<br><b>U-V:</b> Shows the difference, highlighting edges.<br><b>Colormap:</b> Color scheme for displaying values. Viridis is perceptually uniform.</div></span>
+                </div>
                 <div class="toggle-group" id="channelGroup">
                     <button class="toggle-btn" data-channel="u">U</button>
                     <button class="toggle-btn active" data-channel="v">V</button>
@@ -449,7 +508,10 @@
             </div>
 
             <div class="control-section">
-                <div class="section-header">Grid</div>
+                <div class="section-header">
+                    <span>Grid</span>
+                    <span class="help-icon">i<div class="tooltip"><b>Size (128/256/512):</b> Resolution of the simulation grid. Higher = more detail but slower.<br><b>Wrap:</b> Edges connect to opposite side (seamless).<br><b>Clamp:</b> Patterns bounce off the edges like walls.</div></span>
+                </div>
                 <div class="toggle-group" id="sizeGroup">
                     <button class="toggle-btn" data-size="128">128</button>
                     <button class="toggle-btn active" data-size="256">256</button>
@@ -462,7 +524,10 @@
             </div>
 
             <div class="control-section">
-                <div class="section-header">Seed Pattern</div>
+                <div class="section-header">
+                    <span>Seed Pattern</span>
+                    <span class="help-icon">i<div class="tooltip">The starting shape when you hit Reset:<br><b>Center:</b> Square in the middle.<br><b>Random:</b> Scattered spots everywhere.<br><b>Ring:</b> Circular ring pattern.</div></span>
+                </div>
                 <div class="toggle-group" id="seedGroup">
                     <button class="toggle-btn active" data-seed="center">Center</button>
                     <button class="toggle-btn" data-seed="random">Random</button>
@@ -471,7 +536,10 @@
             </div>
 
             <div class="control-section">
-                <div class="section-header">Export</div>
+                <div class="section-header">
+                    <span>Export</span>
+                    <span class="help-icon">i<div class="tooltip">Save the current canvas view as a PNG image file.</div></span>
+                </div>
                 <div class="btn-group">
                     <button class="btn btn-secondary btn-small" id="screenshotBtn">Screenshot</button>
                 </div>
@@ -1409,8 +1477,8 @@
         const section = document.getElementById('paramsSection');
         const model = models[state.model];
 
-        // Keep section header
-        section.innerHTML = '<div class="section-header">Parameters</div>';
+        // Keep section header with help icon
+        section.innerHTML = '<div class="section-header"><span>Parameters</span><span class="help-icon">i<div class="tooltip"><b>F (Feed):</b> Rate at which chemical U is added. Higher = more activity.<br><b>k (Kill):</b> Rate at which chemical V decays. Controls pattern type.<br><b>Du/Dv:</b> How fast each chemical spreads. The ratio between them determines pattern formation.</div></span></div>';
 
         for (const [key, config] of Object.entries(model.params)) {
             const value = state.params[key] !== undefined ? state.params[key] : config.default;
