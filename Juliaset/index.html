@@ -388,6 +388,7 @@ var INFO = {
   showAxes: { title: "Show Axes", text: "Overlays the real (horizontal) and imaginary (vertical) axes with tick marks and labels to help orient you in the complex plane." },
   showOrbit: { title: "Show Orbit", text: "Click any point on the fractal to see its iteration orbit \u2014 the sequence of z values as the formula is applied repeatedly. Orbits that spiral outward escape; orbits that stay bounded are inside the set." },
   tooltip: { title: "Coordinate Tooltip", text: "Shows complex-plane coordinates as you hover over the canvas, helping you identify exact positions in the fractal." },
+  splitView: { title: "Split View", text: "Shows the Mandelbrot set alongside the Julia set. Click anywhere on the Mandelbrot set to instantly generate the corresponding Julia set. Each point c on the Mandelbrot set defines a unique Julia set \u2014 points inside the Mandelbrot set produce connected Julia sets, points outside produce disconnected 'dust'." },
 };
 
 function InfoButton(props) {
@@ -482,12 +483,23 @@ function JuliaSetExplorer() {
   var _canvasSize = useState({w:800,h:600}), canvasSize = _canvasSize[0], setCanvasSize = _canvasSize[1];
   var _exportRes = useState(4096), exportRes = _exportRes[0], setExportRes = _exportRes[1];
   var _exporting = useState(false), exporting = _exporting[0], setExporting = _exporting[1];
+  var _splitView = useState(false), splitView = _splitView[0], setSplitView = _splitView[1];
+  var _splitMbSize = useState({w:400,h:400}), splitMbSize = _splitMbSize[0], setSplitMbSize = _splitMbSize[1];
+  var _splitMbZoom = useState(1.0), splitMbZoom = _splitMbZoom[0], setSplitMbZoom = _splitMbZoom[1];
+  var _splitMbCenter = useState({x:-0.5,y:0}), splitMbCenter = _splitMbCenter[0], setSplitMbCenter = _splitMbCenter[1];
+  var _splitMbMouse = useState(null), splitMbMouse = _splitMbMouse[0], setSplitMbMouse = _splitMbMouse[1];
+  var _splitHoverC = useState(null), splitHoverC = _splitHoverC[0], setSplitHoverC = _splitHoverC[1];
 
   var canvasRef = useRef(null);
   var overlayRef = useRef(null);
   var containerRef = useRef(null);
   var mandelbrotRef = useRef(null);
   var mandelbrotDataRef = useRef(null);
+  var splitMbCanvasRef = useRef(null);
+  var splitMbOverlayRef = useRef(null);
+  var splitMbContainerRef = useRef(null);
+  var splitMbDragging = useRef(false);
+  var splitMbDragStart = useRef({x:0,y:0,cx:0,cy:0});
   var animFrameRef = useRef(null);
   var colorAnimRef = useRef(null);
   var renderTimerRef = useRef(null);
@@ -729,6 +741,177 @@ function JuliaSetExplorer() {
     ctx.beginPath(); ctx.moveTo(px-8,py); ctx.lineTo(px+8,py); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(px,py-8); ctx.lineTo(px,py+8); ctx.stroke();
   }, [cRe, cIm]);
+
+  // Split view: Mandelbrot canvas resize
+  useEffect(function() {
+    if (!splitView) return;
+    var container = splitMbContainerRef.current;
+    if (!container) return;
+    var ro = new ResizeObserver(function(entries) {
+      for (var i = 0; i < entries.length; i++) {
+        var rect = entries[i].contentRect;
+        if (rect.width > 0 && rect.height > 0) setSplitMbSize({w: Math.floor(rect.width), h: Math.floor(rect.height)});
+      }
+    });
+    ro.observe(container);
+    return function() { ro.disconnect(); };
+  }, [splitView]);
+
+  // Split view: render Mandelbrot
+  useEffect(function() {
+    if (!splitView) return;
+    var canvas = splitMbCanvasRef.current;
+    if (!canvas) return;
+    var w = splitMbSize.w, ht = splitMbSize.h;
+    if (w <= 0 || ht <= 0) return;
+    canvas.width = w; canvas.height = ht;
+    var ctx = canvas.getContext('2d');
+    var imgData = ctx.createImageData(w, ht);
+    var data = imgData.data;
+    var aspect = w / ht;
+    var rangeY = 3.0 / splitMbZoom;
+    var rangeX = rangeY * aspect;
+    var xMin = splitMbCenter.x - rangeX / 2;
+    var yMin = splitMbCenter.y - rangeY / 2;
+    var mIter = maxIter;
+    var palRgb = (PALETTES[palette]||PALETTES["Deep Ocean"]).map(hexToRgb);
+    var er2 = escapeRadius * escapeRadius;
+    for (var py = 0; py < ht; py++) {
+      var ci = yMin + (py / ht) * rangeY;
+      for (var px = 0; px < w; px++) {
+        var cr = xMin + (px / w) * rangeX;
+        var x = 0, y = 0, escaped = false, i = 0;
+        for (; i < mIter; i++) {
+          var x2 = x*x, y2 = y*y;
+          if (x2 + y2 > er2) { escaped = true; break; }
+          var nx = x2 - y2 + cr;
+          y = 2*x*y + ci; x = nx;
+        }
+        var idx = (py * w + px) * 4;
+        if (escaped) {
+          var val = i;
+          if (smoothColoring) {
+            var modZ = Math.sqrt(x*x + y*y);
+            val = i + 1 - Math.log(Math.log(modZ)) / Math.log(2);
+          }
+          var t = ((val * cycleSpeed / mIter + colorOffset) % 1 + 1) % 1;
+          var col = lerpColor(palRgb, t);
+          data[idx] = col[0]; data[idx+1] = col[1]; data[idx+2] = col[2]; data[idx+3] = 255;
+        } else {
+          data[idx] = 15; data[idx+1] = 23; data[idx+2] = 42; data[idx+3] = 255;
+        }
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }, [splitView, splitMbSize, splitMbZoom, splitMbCenter, maxIter, palette, smoothColoring, cycleSpeed, colorOffset, escapeRadius]);
+
+  // Split view: draw overlay (crosshair for current c, hover preview, tooltip)
+  useEffect(function() {
+    if (!splitView) return;
+    var canvas = splitMbOverlayRef.current;
+    if (!canvas) return;
+    var w = splitMbSize.w, ht = splitMbSize.h;
+    canvas.width = w; canvas.height = ht;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, ht);
+    var aspect = w / ht;
+    var rangeY = 3.0 / splitMbZoom;
+    var rangeX = rangeY * aspect;
+    var toScreen = function(cx, cy) {
+      return [((cx - splitMbCenter.x) / rangeX + 0.5) * w, ((cy - splitMbCenter.y) / rangeY + 0.5) * ht];
+    };
+    // Current c crosshair
+    var cp = toScreen(cRe, cIm);
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cp[0], cp[1], 7, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cp[0]-11,cp[1]); ctx.lineTo(cp[0]+11,cp[1]); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cp[0],cp[1]-11); ctx.lineTo(cp[0],cp[1]+11); ctx.stroke();
+    // Hover crosshair
+    if (splitHoverC) {
+      var hp = toScreen(splitHoverC.x, splitHoverC.y);
+      ctx.strokeStyle = 'rgba(245,158,11,0.5)'; ctx.lineWidth = 1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(hp[0],0); ctx.lineTo(hp[0],ht); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,hp[1]); ctx.lineTo(w,hp[1]); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // Label
+    ctx.fillStyle = 'rgba(15,23,42,0.7)';
+    ctx.fillRect(4, 4, 110, 20);
+    ctx.fillStyle = '#f59e0b'; ctx.font = '11px JetBrains Mono, monospace';
+    ctx.fillText('Mandelbrot Set', 8, 17);
+    // Tooltip
+    if (splitMbMouse) {
+      var mx = splitMbMouse.x, my = splitMbMouse.y;
+      var cx = splitMbCenter.x + (mx / w - 0.5) * rangeX;
+      var cy = splitMbCenter.y + (my / ht - 0.5) * rangeY;
+      var text = 'c = '+cx.toFixed(4)+' '+(cy >= 0 ? '+' : '\u2212')+' '+Math.abs(cy).toFixed(4)+'i';
+      ctx.fillStyle = 'rgba(15,23,42,0.8)';
+      var tw = ctx.measureText(text).width + 12;
+      var tx = Math.min(mx + 12, w - tw - 4);
+      var ty = Math.max(my - 28, 4);
+      ctx.fillRect(tx, ty, tw, 22);
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '12px JetBrains Mono, monospace';
+      ctx.fillText(text, tx + 6, ty + 15);
+    }
+  }, [splitView, splitMbSize, splitMbZoom, splitMbCenter, cRe, cIm, splitHoverC, splitMbMouse]);
+
+  // Split Mandelbrot interaction handlers
+  var splitMbScreenToComplex = useCallback(function(sx, sy) {
+    var aspect = splitMbSize.w / splitMbSize.h;
+    var rangeY = 3.0 / splitMbZoom;
+    var rangeX = rangeY * aspect;
+    return { x: splitMbCenter.x + (sx / splitMbSize.w - 0.5) * rangeX, y: splitMbCenter.y + (sy / splitMbSize.h - 0.5) * rangeY };
+  }, [splitMbSize, splitMbZoom, splitMbCenter]);
+
+  var handleSplitMbWheel = useCallback(function(e) {
+    e.preventDefault();
+    var rect = e.currentTarget.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    var pt = splitMbScreenToComplex(mx, my);
+    var factor = e.deltaY < 0 ? 1.15 : 1/1.15;
+    var newZoom = Math.max(0.5, Math.min(10000, splitMbZoom * factor));
+    setSplitMbCenter({
+      x: pt.x + (splitMbCenter.x - pt.x) * (splitMbZoom / newZoom),
+      y: pt.y + (splitMbCenter.y - pt.y) * (splitMbZoom / newZoom)
+    });
+    setSplitMbZoom(newZoom);
+  }, [splitMbZoom, splitMbCenter, splitMbScreenToComplex]);
+
+  var handleSplitMbMouseDown = useCallback(function(e) {
+    splitMbDragging.current = true;
+    splitMbDragStart.current = {x: e.clientX, y: e.clientY, cx: splitMbCenter.x, cy: splitMbCenter.y};
+  }, [splitMbCenter]);
+
+  var handleSplitMbMouseMove = useCallback(function(e) {
+    var rect = e.currentTarget.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    setSplitMbMouse({x: mx, y: my});
+    var pt = splitMbScreenToComplex(mx, my);
+    setSplitHoverC(pt);
+    if (splitMbDragging.current) {
+      var dx = e.clientX - splitMbDragStart.current.x;
+      var dy = e.clientY - splitMbDragStart.current.y;
+      var aspect = splitMbSize.w / splitMbSize.h;
+      var rangeY = 3.0 / splitMbZoom;
+      var rangeX = rangeY * aspect;
+      setSplitMbCenter({
+        x: splitMbDragStart.current.cx - (dx / splitMbSize.w) * rangeX,
+        y: splitMbDragStart.current.cy - (dy / splitMbSize.h) * rangeY
+      });
+    }
+  }, [splitMbSize, splitMbZoom, splitMbScreenToComplex]);
+
+  var handleSplitMbMouseUp = useCallback(function(e) {
+    var wasDrag = splitMbDragging.current && (Math.abs(e.clientX - splitMbDragStart.current.x) > 3 || Math.abs(e.clientY - splitMbDragStart.current.y) > 3);
+    splitMbDragging.current = false;
+    if (!wasDrag) {
+      var rect = e.currentTarget.getBoundingClientRect();
+      var pt = splitMbScreenToComplex(e.clientX - rect.left, e.clientY - rect.top);
+      setCRe(pt.x);
+      setCIm(pt.y);
+    }
+  }, [splitMbScreenToComplex]);
 
   var screenToComplex = useCallback(function(sx, sy) {
     var aspect = canvasSize.w / canvasSize.h;
@@ -1051,6 +1234,11 @@ function JuliaSetExplorer() {
       ),
       h('div', {style:{display:'flex',alignItems:'center',gap:12}},
         h('span', {className:'mono', style:{fontSize:13,color:'#94a3b8'}}, cFormatted),
+        h('button', {onClick:function(){setSplitView(!splitView);},
+          style:{padding:'4px 10px',borderRadius:6,border:'1px solid '+(splitView?'#f59e0b':'rgba(148,163,184,0.3)'),
+            background:splitView?'rgba(245,158,11,0.15)':'transparent',
+            color:splitView?'#f59e0b':'#94a3b8',cursor:'pointer',fontSize:11,fontWeight:500}},
+          splitView ? '\u25a8 Split' : '\u25a8 Split'),
         h('button', {onClick:function(){setShowHelp(true);}, style:{width:28,height:28,borderRadius:'50%',border:'1px solid #f59e0b',background:'transparent',color:'#f59e0b',fontSize:14,cursor:'pointer',fontWeight:600}}, '?')
       )
     ),
@@ -1059,13 +1247,34 @@ function JuliaSetExplorer() {
       // Sidebar
       sidebarOpen && h('div', {className:'glass', style:{width:320,flexShrink:0,overflowY:'auto',overflowX:'hidden',borderRight:'1px solid rgba(148,163,184,0.15)'},
         onClick:function(){setActiveInfo(null);}}, sidebarContent),
-      // Canvas area
-      h('div', {ref:containerRef, style:{flex:1,position:'relative',overflow:'hidden',cursor:'crosshair'},
-        onWheel:handleWheel, onMouseDown:handleMouseDown, onMouseMove:handleMouseMove, onMouseUp:handleMouseUp,
-        onMouseLeave:function(){isDragging.current=false;setMousePos(null);}},
-        h('canvas', {ref:canvasRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%'}}),
-        h('canvas', {ref:overlayRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}})
-      )
+      // Canvas area (split or single)
+      splitView ?
+        h('div', {style:{flex:1,display:'flex',overflow:'hidden'}},
+          // Mandelbrot side
+          h('div', {ref:splitMbContainerRef, style:{flex:1,position:'relative',overflow:'hidden',cursor:'crosshair',borderRight:'2px solid rgba(245,158,11,0.3)'},
+            onWheel:handleSplitMbWheel, onMouseDown:handleSplitMbMouseDown, onMouseMove:handleSplitMbMouseMove, onMouseUp:handleSplitMbMouseUp,
+            onMouseLeave:function(){splitMbDragging.current=false;setSplitMbMouse(null);setSplitHoverC(null);}},
+            h('canvas', {ref:splitMbCanvasRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%'}}),
+            h('canvas', {ref:splitMbOverlayRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}})
+          ),
+          // Julia side
+          h('div', {ref:containerRef, style:{flex:1,position:'relative',overflow:'hidden',cursor:'crosshair'},
+            onWheel:handleWheel, onMouseDown:handleMouseDown, onMouseMove:handleMouseMove, onMouseUp:handleMouseUp,
+            onMouseLeave:function(){isDragging.current=false;setMousePos(null);}},
+            h('canvas', {ref:canvasRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%'}}),
+            h('canvas', {ref:overlayRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}}),
+            // Julia label
+            h('div', {style:{position:'absolute',top:4,left:4,padding:'2px 8px',background:'rgba(15,23,42,0.7)',borderRadius:4,pointerEvents:'none'}},
+              h('span', {className:'mono', style:{fontSize:11,color:'#f59e0b'}}, 'Julia Set'))
+          )
+        )
+      :
+        h('div', {ref:containerRef, style:{flex:1,position:'relative',overflow:'hidden',cursor:'crosshair'},
+          onWheel:handleWheel, onMouseDown:handleMouseDown, onMouseMove:handleMouseMove, onMouseUp:handleMouseUp,
+          onMouseLeave:function(){isDragging.current=false;setMousePos(null);}},
+          h('canvas', {ref:canvasRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%'}}),
+          h('canvas', {ref:overlayRef, style:{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}})
+        )
     ),
     // Status Bar
     h('div', {style:{height:28,display:'flex',alignItems:'center',gap:24,padding:'0 16px',background:'#1e293b',borderTop:'1px solid rgba(148,163,184,0.15)',flexShrink:0}},
