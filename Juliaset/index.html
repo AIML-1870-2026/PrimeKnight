@@ -480,6 +480,8 @@ function JuliaSetExplorer() {
   var _mousePos = useState(null), mousePos = _mousePos[0], setMousePos = _mousePos[1];
   var _renderTime = useState(0), renderTime = _renderTime[0], setRenderTime = _renderTime[1];
   var _canvasSize = useState({w:800,h:600}), canvasSize = _canvasSize[0], setCanvasSize = _canvasSize[1];
+  var _exportRes = useState(4096), exportRes = _exportRes[0], setExportRes = _exportRes[1];
+  var _exporting = useState(false), exporting = _exporting[0], setExporting = _exporting[1];
 
   var canvasRef = useRef(null);
   var overlayRef = useRef(null);
@@ -800,7 +802,90 @@ function JuliaSetExplorer() {
     return function() { window.removeEventListener('keydown', handler); };
   }, [zoom]);
 
+  // High-resolution export
+  var exportHighRes = useCallback(function() {
+    setExporting(true);
+    setTimeout(function() {
+      var aspect = canvasSize.w / canvasSize.h;
+      var w = exportRes;
+      var ht = Math.round(exportRes / aspect);
+      var offscreen = document.createElement('canvas');
+      offscreen.width = w; offscreen.height = ht;
+      var ctx = offscreen.getContext('2d');
+      var imgData = ctx.createImageData(w, ht);
+      var data = imgData.data;
+      var er2 = escapeRadius * escapeRadius;
+      var logN = Math.log(power);
+      var rangeY = 3.0 / zoom;
+      var rangeX = rangeY * aspect;
+      var xMin = centerX - rangeX / 2;
+      var yMin = centerY - rangeY / 2;
+      var palRgb = (PALETTES[palette]||PALETTES["Deep Ocean"]).map(hexToRgb);
+      var intRgb = interiorColor === 'transparent' ? null : hexToRgb(interiorColor);
+      for (var py = 0; py < ht; py++) {
+        var zi = yMin + (py / ht) * rangeY;
+        for (var px = 0; px < w; px++) {
+          var zr = xMin + (px / w) * rangeX;
+          var x = zr, y = zi, escaped = false, i = 0;
+          if (power === 2) {
+            for (; i < maxIter; i++) {
+              var x2 = x*x, y2 = y*y;
+              if (x2 + y2 > er2) { escaped = true; break; }
+              var nx = x2 - y2 + cRe;
+              y = 2*x*y + cIm; x = nx;
+            }
+          } else {
+            for (; i < maxIter; i++) {
+              var r2 = x*x + y*y;
+              if (r2 > er2) { escaped = true; break; }
+              var r = Math.pow(r2, power/2);
+              var theta = Math.atan2(y, x) * power;
+              x = r * Math.cos(theta) + cRe;
+              y = r * Math.sin(theta) + cIm;
+            }
+          }
+          var idx = (py * w + px) * 4;
+          if (escaped) {
+            var val = i;
+            if (smoothColoring) {
+              var modZ = Math.sqrt(x*x + y*y);
+              val = i + 1 - Math.log(Math.log(modZ)) / logN;
+            }
+            var t = ((val * cycleSpeed / maxIter + colorOffset) % 1 + 1) % 1;
+            var col = lerpColor(palRgb, t);
+            data[idx] = col[0]; data[idx+1] = col[1]; data[idx+2] = col[2]; data[idx+3] = 255;
+          } else {
+            if (intRgb) {
+              data[idx] = intRgb[0]; data[idx+1] = intRgb[1]; data[idx+2] = intRgb[2]; data[idx+3] = 255;
+            } else { data[idx] = 0; data[idx+1] = 0; data[idx+2] = 0; data[idx+3] = 255; }
+          }
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      offscreen.toBlob(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'julia-set-' + w + 'x' + ht + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setExporting(false);
+      }, 'image/png');
+    }, 50);
+  }, [canvasSize, exportRes, cRe, cIm, maxIter, escapeRadius, power, zoom, centerX, centerY, palette, smoothColoring, cycleSpeed, colorOffset, interiorColor]);
+
   var cFormatted = 'c = '+(cRe >= 0 ? '' : '\u2212')+Math.abs(cRe).toFixed(3)+' '+(cIm >= 0 ? '+' : '\u2212')+' '+Math.abs(cIm).toFixed(3)+'i';
+
+  var EXPORT_SIZES = [
+    {label: '1080p (1920\u00d71080)', value: 1920},
+    {label: '2K (2560\u00d71440)', value: 2560},
+    {label: '4K (3840\u00d72160)', value: 3840},
+    {label: '4096px', value: 4096},
+    {label: '6K (6144\u00d73456)', value: 6144},
+    {label: '8K (7680\u00d74320)', value: 7680},
+  ];
 
   // Build sidebar sections
   var sidebarContent = [
@@ -928,6 +1013,31 @@ function JuliaSetExplorer() {
             onMouseLeave:function(e){e.target.style.background='transparent';e.target.style.color='#f59e0b';}}, p.name);
         })
       )
+    ),
+    // Section 8: Export
+    h(AccordionSection, {key:'export', title:'Export', open:sections.includes('export'), onToggle:function(){toggleSection('export');}},
+      h('div', {style:{marginBottom:10}},
+        h('div', {style:{display:'flex',alignItems:'center',marginBottom:6}},
+          h('span', {style:{fontSize:13,color:'#e2e8f0',fontWeight:500}}, 'Resolution')
+        ),
+        h('div', {style:{display:'flex',flexWrap:'wrap',gap:4}},
+          EXPORT_SIZES.map(function(s) {
+            return h('button', {key:s.value, onClick:function(){setExportRes(s.value);},
+              style:{padding:'4px 8px',borderRadius:6,fontSize:11,cursor:'pointer',fontWeight:500,
+                border: exportRes===s.value ? '2px solid #f59e0b' : '1px solid rgba(148,163,184,0.2)',
+                background: exportRes===s.value ? 'rgba(245,158,11,0.15)' : 'transparent',
+                color: exportRes===s.value ? '#f59e0b' : '#94a3b8'}}, s.label);
+          })
+        )
+      ),
+      h('div', {className:'mono', style:{fontSize:11,color:'#94a3b8',marginBottom:10}},
+        'Output: ' + exportRes + '\u00d7' + Math.round(exportRes / (canvasSize.w / canvasSize.h)) + 'px PNG'),
+      h('button', {onClick: exporting ? null : exportHighRes, disabled: exporting,
+        style:{width:'100%',padding:'8px 0',borderRadius:8,border:'none',
+          background: exporting ? '#475569' : '#f59e0b',
+          color: exporting ? '#94a3b8' : '#0f1729',
+          cursor: exporting ? 'wait' : 'pointer',fontSize:13,fontWeight:600}},
+        exporting ? 'Rendering\u2026' : '\u2b07 Download High-Res Image')
     ),
   ];
 
