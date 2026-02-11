@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Julia Set Explorer</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f1729; color: #e2e8f0; }
+  .mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; background: #334155; border-radius: 3px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f59e0b; cursor: pointer; box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #f59e0b; cursor: pointer; border: none; box-shadow: 0 0 6px rgba(245,158,11,0.4); }
+  .num-input { background: #1e293b; border: 1px solid rgba(148,163,184,0.2); border-radius: 4px; color: #e2e8f0; padding: 2px 6px; width: 72px; font-family: 'JetBrains Mono', monospace; font-size: 12px; outline: none; }
+  .num-input:focus { border-color: #f59e0b; }
+  .glass { background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(148,163,184,0.15); }
+  .info-popover { background: rgba(15,23,42,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; max-width: 320px; box-shadow: 0 4px 24px rgba(245,158,11,0.08); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  .toggle-track { width: 36px; height: 20px; border-radius: 10px; cursor: pointer; transition: background 0.2s; position: relative; }
+  .toggle-thumb { width: 16px; height: 16px; border-radius: 50%; background: white; position: absolute; top: 2px; transition: left 0.2s; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+const PALETTES = {
+  "Deep Ocean": ["#0a0a2e","#003366","#0077b6","#00b4d8","#90e0ef","#ffffff"],
+  "Solar Flare": ["#000000","#4a0000","#cc3300","#ff9900","#ffcc00","#ffffff"],
+  "Neon Synthwave": ["#0d0221","#3d1a78","#cc00ff","#ff0099","#00ffff","#ffffff"],
+  "Aurora Borealis": ["#000000","#003300","#00cc66","#33ffcc","#ccffee","#ffffff"],
+  "Infrared": ["#000000","#1a0033","#660066","#cc0044","#ff6600","#ffff00"],
+  "Monochrome": ["#000000","#333333","#666666","#999999","#cccccc","#ffffff"],
+  "Candy Gradient": ["#1a1a2e","#e94560","#ff6b8a","#ffc2d1","#b8f2e6","#aef1e8"],
+  "Electric Dusk": ["#0b0c10","#1f4068","#e43f5a","#f9a825","#fffde7","#ffffff"],
+};
+
+const PRESETS = [
+  { name: "Dendrite", c: {re:0,im:1}, palette: "Monochrome" },
+  { name: "Douady Rabbit", c: {re:-0.123,im:0.745}, palette: "Deep Ocean" },
+  { name: "Siegel Disc", c: {re:-0.391,im:-0.587}, palette: "Aurora Borealis" },
+  { name: "San Marco", c: {re:-0.75,im:0}, palette: "Solar Flare" },
+  { name: "Spiral Galaxy", c: {re:-0.7,im:0.27015}, palette: "Neon Synthwave" },
+  { name: "Lightning", c: {re:-0.4,im:0.6}, palette: "Electric Dusk" },
+  { name: "Cantor Dust", c: {re:0.36,im:0.1}, palette: "Infrared" },
+  { name: "Dragon", c: {re:-0.8,im:0.156}, palette: "Candy Gradient" },
+];
+
+const INTERIOR_COLORS = ["#000000","#0a1628","#1a0533","#ffffff","transparent"];
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return [r,g,b];
+}
+
+function lerpColor(stops, t) {
+  t = ((t % 1) + 1) % 1;
+  const seg = t * (stops.length - 1);
+  const i = Math.floor(seg);
+  const f = seg - i;
+  const a = stops[Math.min(i, stops.length-1)];
+  const b = stops[Math.min(i+1, stops.length-1)];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
+}
+
+// Info content
+const INFO = {
+  realC: { title: "Real(c)", text: "The real component of the complex constant c. It controls the horizontal symmetry and overall shape of the Julia set. Small changes can dramatically alter the fractal structure." },
+  imagC: { title: "Imag(c)", text: "The imaginary component of c. It affects vertical features and rotational characteristics of the Julia set." },
+  mandelbrot: { title: "Mandelbrot c-Picker", text: "Each point on the Mandelbrot set corresponds to a connected Julia set. Points outside produce disconnected 'dust' Julia sets. Points on the boundary produce the most intricate shapes." },
+  maxIter: { title: "Max Iterations", text: "More iterations reveal finer detail at the boundary but cost more computation. Points that haven't escaped after max iterations are considered 'in the set.'", formula: "iterations: 50 → 2000" },
+  escapeRadius: { title: "Escape Radius", text: "The bailout condition: once |z| exceeds this value, we know the point escapes to infinity. Values > 2 are mathematically sufficient; larger values produce smoother coloring.", formula: "|z|² > R²" },
+  zoom: { title: "Zoom & Self-Similarity", text: "Fractals contain infinite detail. As you zoom in, you'll see similar structures repeating at every scale — this is a hallmark of fractal geometry." },
+  palette: { title: "Color Palette", text: "Escape-time coloring maps the iteration count to a color. Different palettes highlight different structures in the fractal boundary." },
+  smooth: { title: "Smooth Coloring", text: "Normalized iteration count eliminates visible color banding, producing continuous gradients instead of harsh steps.", formula: "n - log₂(log₂(|z|))" },
+  cycleSpeed: { title: "Color Cycle Speed", text: "How many times the palette repeats across the iteration range. Higher values reveal more detail in transition zones." },
+  colorOffset: { title: "Color Offset", text: "Rotates the palette starting point. Animating this creates a 'breathing' or 'flowing' effect through the fractal." },
+  interior: { title: "Interior Color", text: "The color of points inside the Julia set — those that never escape to infinity under iteration." },
+  animColors: { title: "Animate Colors", text: "Slowly increments the color offset over time, creating a pulsing, flowing color animation through the fractal." },
+  power: { title: "Power (n)", text: "Changes the formula from z² + c to zⁿ + c. Higher powers produce rotational symmetry: n=3 gives 3-fold symmetry, n=4 gives 4-fold, etc. Fractional powers create fascinating asymmetric shapes.", formula: "z → zⁿ + c" },
+  animateC: { title: "Animate c", text: "When enabled, c orbits a circle in the complex plane, showing how the Julia set morphs continuously. Connected Julia sets smoothly transition through dramatically different shapes as c moves." },
+  orbitRadius: { title: "Orbit Radius", text: "Radius of the circle c travels along. 0.7885 is a classic choice that produces beautiful transitions between connected and disconnected Julia sets." },
+  showAxes: { title: "Show Axes", text: "Overlays the real (horizontal) and imaginary (vertical) axes with tick marks and labels to help orient you in the complex plane." },
+  showOrbit: { title: "Show Orbit", text: "Click any point on the fractal to see its iteration orbit — the sequence of z values as the formula is applied repeatedly. Orbits that spiral outward escape; orbits that stay bounded are inside the set." },
+  tooltip: { title: "Coordinate Tooltip", text: "Shows complex-plane coordinates as you hover over the canvas, helping you identify exact positions in the fractal." },
+};
+
+function InfoButton({ id, activeInfo, setActiveInfo }) {
+  const info = INFO[id];
+  if (!info) return null;
+  const isOpen = activeInfo === id;
+  return (
+    <span style={{position:'relative',display:'inline-block'}}>
+      <button onClick={(e) => { e.stopPropagation(); setActiveInfo(isOpen ? null : id); }}
+        style={{width:18,height:18,borderRadius:'50%',border:'1px solid #f59e0b',background:'transparent',color:'#f59e0b',fontSize:11,cursor:'pointer',lineHeight:'16px',textAlign:'center',padding:0,marginLeft:4,flexShrink:0}}
+        aria-label={`Info about ${info.title}`}>ⓘ</button>
+      {isOpen && (
+        <div className="info-popover" style={{position:'absolute',left:24,top:-8,zIndex:100,padding:16,minWidth:260}}
+          onClick={e => e.stopPropagation()}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <span style={{color:'#f59e0b',fontWeight:600,fontSize:14}}>{info.title}</span>
+            <button onClick={() => setActiveInfo(null)} style={{background:'none',border:'none',color:'#94a3b8',cursor:'pointer',fontSize:16}}>✕</button>
+          </div>
+          <p style={{fontSize:13,lineHeight:1.6,color:'#e2e8f0'}}>{info.text}</p>
+          {info.formula && <p className="mono" style={{color:'#f59e0b',marginTop:8,fontSize:13}}>{info.formula}</p>}
+        </div>
+      )}
+    </span>
+  );
+}
+
+function Toggle({ value, onChange, label }) {
+  return (
+    <div className="toggle-track" style={{background: value ? '#f59e0b' : '#475569'}} onClick={() => onChange(!value)} role="switch" aria-checked={value} aria-label={label}>
+      <div className="toggle-thumb" style={{left: value ? 18 : 2}}/>
+    </div>
+  );
+}
+
+function SliderRow({ label, value, onChange, min, max, step, infoId, activeInfo, setActiveInfo, showNum=true, log=false }) {
+  const sliderVal = log ? Math.log10(value) : value;
+  const sliderMin = log ? Math.log10(min) : min;
+  const sliderMax = log ? Math.log10(max) : max;
+  const sliderStep = log ? 0.01 : step;
+  const handleSlider = (e) => {
+    const v = parseFloat(e.target.value);
+    onChange(log ? Math.pow(10, v) : v);
+  };
+  return (
+    <div style={{marginBottom:10}}>
+      <div style={{display:'flex',alignItems:'center',marginBottom:4}}>
+        <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>{label}</span>
+        {infoId && <InfoButton id={infoId} activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>}
+      </div>
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        <input type="range" min={sliderMin} max={sliderMax} step={sliderStep} value={sliderVal} onChange={handleSlider}
+          aria-label={label} aria-valuetext={String(Math.round(value*1000)/1000)} style={{flex:1}} />
+        {showNum && <input type="number" className="num-input" value={Math.round(value*1000)/1000} step={step}
+          onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) onChange(Math.min(max, Math.max(min, v))); }} />}
+      </div>
+    </div>
+  );
+}
+
+function AccordionSection({ title, open, onToggle, children }) {
+  return (
+    <div style={{borderBottom:'1px solid rgba(148,163,184,0.15)'}}>
+      <button onClick={onToggle} style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 12px',background:'#1e293b',border:'none',cursor:'pointer',color:'#f59e0b',fontSize:13,fontWeight:600,letterSpacing:'0.05em',textTransform:'uppercase'}}>
+        {title}
+        <span style={{transition:'transform 0.2s',transform:open?'rotate(180deg)':'rotate(0deg)',fontSize:12}}>▼</span>
+      </button>
+      {open && <div style={{padding:'10px 12px'}}>{children}</div>}
+    </div>
+  );
+}
+
+function JuliaSetExplorer() {
+  // Julia params
+  const [cRe, setCRe] = useState(-0.7);
+  const [cIm, setCIm] = useState(0.27);
+  const [maxIter, setMaxIter] = useState(300);
+  const [escapeRadius, setEscapeRadius] = useState(4);
+  const [power, setPower] = useState(2.0);
+
+  // Viewport
+  const [zoom, setZoom] = useState(1.0);
+  const [centerX, setCenterX] = useState(0);
+  const [centerY, setCenterY] = useState(0);
+
+  // Coloring
+  const [palette, setPalette] = useState("Deep Ocean");
+  const [smoothColoring, setSmoothColoring] = useState(true);
+  const [cycleSpeed, setCycleSpeed] = useState(1.0);
+  const [colorOffset, setColorOffset] = useState(0.0);
+  const [interiorColor, setInteriorColor] = useState("#000000");
+  const [animateColors, setAnimateColors] = useState(false);
+
+  // Animation
+  const [animateC, setAnimateC] = useState(false);
+  const [orbitRadius, setOrbitRadius] = useState(0.7885);
+  const [animSpeed, setAnimSpeed] = useState(1.0);
+  const [animPaused, setAnimPaused] = useState(false);
+
+  // Overlays
+  const [showAxes, setShowAxes] = useState(false);
+  const [showOrbit, setShowOrbit] = useState(false);
+  const [orbitTrailLength, setOrbitTrailLength] = useState(50);
+  const [showTooltip, setShowTooltip] = useState(true);
+  const [orbitPoint, setOrbitPoint] = useState(null);
+
+  // UI
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeInfo, setActiveInfo] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [sections, setSections] = useState(["params","coloring","presets"]);
+  const [mousePos, setMousePos] = useState(null);
+  const [renderTime, setRenderTime] = useState(0);
+  const [canvasSize, setCanvasSize] = useState({w:800,h:600});
+
+  const canvasRef = useRef(null);
+  const overlayRef = useRef(null);
+  const containerRef = useRef(null);
+  const mandelbrotRef = useRef(null);
+  const mandelbrotDataRef = useRef(null);
+  const animFrameRef = useRef(null);
+  const colorAnimRef = useRef(null);
+  const renderTimerRef = useRef(null);
+  const isDragging = useRef(false);
+  const dragStart = useRef({x:0,y:0,cx:0,cy:0});
+  const halfRes = useRef(false);
+
+  const toggleSection = (s) => setSections(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev,s]);
+
+  // Palette colors as RGB arrays
+  const paletteRgb = useMemo(() => (PALETTES[palette]||PALETTES["Deep Ocean"]).map(hexToRgb), [palette]);
+  const interiorRgb = useMemo(() => interiorColor === 'transparent' ? null : hexToRgb(interiorColor), [interiorColor]);
+
+  // Canvas resize
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        const {width, height} = e.contentRect;
+        if (width > 0 && height > 0) setCanvasSize({w: Math.floor(width), h: Math.floor(height)});
+      }
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
+  // Render Julia set
+  const renderJulia = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const scale = halfRes.current ? 0.5 : 1;
+    const w = Math.floor(canvasSize.w * scale);
+    const h = Math.floor(canvasSize.h * scale);
+    if (w <= 0 || h <= 0) return;
+
+    canvas.width = canvasSize.w;
+    canvas.height = canvasSize.h;
+
+    const t0 = performance.now();
+    const imgData = ctx.createImageData(w, h);
+    const data = imgData.data;
+    const er2 = escapeRadius * escapeRadius;
+    const logN = Math.log(power);
+    const log2 = Math.log(2);
+    const aspect = w / h;
+    const rangeY = 3.0 / zoom;
+    const rangeX = rangeY * aspect;
+    const xMin = centerX - rangeX / 2;
+    const yMin = centerY - rangeY / 2;
+
+    for (let py = 0; py < h; py++) {
+      const zi = yMin + (py / h) * rangeY;
+      for (let px = 0; px < w; px++) {
+        const zr = xMin + (px / w) * rangeX;
+        let x = zr, y = zi;
+        let escaped = false;
+        let i = 0;
+        if (power === 2) {
+          for (; i < maxIter; i++) {
+            const x2 = x*x, y2 = y*y;
+            if (x2 + y2 > er2) { escaped = true; break; }
+            const nx = x2 - y2 + cRe;
+            y = 2*x*y + cIm;
+            x = nx;
+          }
+        } else {
+          for (; i < maxIter; i++) {
+            const r2 = x*x + y*y;
+            if (r2 > er2) { escaped = true; break; }
+            const r = Math.pow(r2, power/2);
+            const theta = Math.atan2(y, x) * power;
+            x = r * Math.cos(theta) + cRe;
+            y = r * Math.sin(theta) + cIm;
+          }
+        }
+
+        const idx = (py * w + px) * 4;
+        if (escaped) {
+          let val = i;
+          if (smoothColoring) {
+            const modZ = Math.sqrt(x*x + y*y);
+            val = i + 1 - Math.log(Math.log(modZ)) / logN;
+          }
+          const t = ((val * cycleSpeed / maxIter + colorOffset) % 1 + 1) % 1;
+          const [cr, cg, cb] = lerpColor(paletteRgb, t);
+          data[idx] = cr; data[idx+1] = cg; data[idx+2] = cb; data[idx+3] = 255;
+        } else {
+          if (interiorRgb) {
+            data[idx] = interiorRgb[0]; data[idx+1] = interiorRgb[1]; data[idx+2] = interiorRgb[2]; data[idx+3] = 255;
+          } else {
+            data[idx+3] = 0;
+          }
+        }
+      }
+    }
+
+    if (scale < 1) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = w; offscreen.height = h;
+      offscreen.getContext('2d').putImageData(imgData, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(offscreen, 0, 0, canvasSize.w, canvasSize.h);
+    } else {
+      ctx.putImageData(imgData, 0, 0);
+    }
+    setRenderTime(Math.round(performance.now() - t0));
+  }, [canvasSize, cRe, cIm, maxIter, escapeRadius, power, zoom, centerX, centerY, paletteRgb, smoothColoring, cycleSpeed, colorOffset, interiorRgb]);
+
+  // Debounced render
+  useEffect(() => {
+    clearTimeout(renderTimerRef.current);
+    halfRes.current = false;
+    renderTimerRef.current = setTimeout(() => renderJulia(), 50);
+    return () => clearTimeout(renderTimerRef.current);
+  }, [renderJulia]);
+
+  // Draw overlays
+  useEffect(() => {
+    const canvas = overlayRef.current;
+    if (!canvas) return;
+    canvas.width = canvasSize.w;
+    canvas.height = canvasSize.h;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvasSize.w, canvasSize.h);
+    const aspect = canvasSize.w / canvasSize.h;
+    const rangeY = 3.0 / zoom;
+    const rangeX = rangeY * aspect;
+
+    const toScreen = (cx, cy) => [
+      ((cx - centerX) / rangeX + 0.5) * canvasSize.w,
+      ((cy - centerY) / rangeY + 0.5) * canvasSize.h,
+    ];
+
+    if (showAxes) {
+      ctx.strokeStyle = 'rgba(245,158,11,0.3)';
+      ctx.lineWidth = 1;
+      // X axis
+      const [,yAxis] = toScreen(0, 0);
+      if (yAxis >= 0 && yAxis <= canvasSize.h) {
+        ctx.beginPath(); ctx.moveTo(0, yAxis); ctx.lineTo(canvasSize.w, yAxis); ctx.stroke();
+      }
+      // Y axis
+      const [xAxis] = toScreen(0, 0);
+      if (xAxis >= 0 && xAxis <= canvasSize.w) {
+        ctx.beginPath(); ctx.moveTo(xAxis, 0); ctx.lineTo(xAxis, canvasSize.h); ctx.stroke();
+      }
+      // Tick marks
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px JetBrains Mono, monospace';
+      const tickStep = Math.pow(10, Math.floor(Math.log10(rangeX / 4)));
+      const startTick = Math.floor((centerX - rangeX/2) / tickStep) * tickStep;
+      for (let t = startTick; t < centerX + rangeX/2; t += tickStep) {
+        if (Math.abs(t) < tickStep * 0.01) continue;
+        const [sx, sy] = toScreen(t, 0);
+        if (sx >= 0 && sx <= canvasSize.w && yAxis >= 0 && yAxis <= canvasSize.h) {
+          ctx.beginPath(); ctx.moveTo(sx, yAxis-4); ctx.lineTo(sx, yAxis+4); ctx.stroke();
+          ctx.fillText(t.toFixed(2), sx+2, yAxis+14);
+        }
+      }
+    }
+
+    // Orbit
+    if (showOrbit && orbitPoint) {
+      let x = orbitPoint.x, y = orbitPoint.y;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      const [sx0, sy0] = toScreen(x, y);
+      ctx.moveTo(sx0, sy0);
+      for (let i = 0; i < orbitTrailLength; i++) {
+        let nx, ny;
+        if (power === 2) {
+          nx = x*x - y*y + cRe;
+          ny = 2*x*y + cIm;
+        } else {
+          const r = Math.pow(x*x+y*y, power/2);
+          const th = Math.atan2(y,x)*power;
+          nx = r*Math.cos(th)+cRe;
+          ny = r*Math.sin(th)+cIm;
+        }
+        x = nx; y = ny;
+        if (x*x+y*y > 1e10) break;
+        const [sx, sy] = toScreen(x, y);
+        ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      // dots
+      x = orbitPoint.x; y = orbitPoint.y;
+      for (let i = 0; i < Math.min(orbitTrailLength, 200); i++) {
+        const [sx, sy] = toScreen(x, y);
+        ctx.fillStyle = `rgba(245,158,11,${1 - i/orbitTrailLength})`;
+        ctx.beginPath(); ctx.arc(sx, sy, 2.5, 0, Math.PI*2); ctx.fill();
+        let nx, ny;
+        if (power === 2) { nx = x*x-y*y+cRe; ny = 2*x*y+cIm; }
+        else { const r=Math.pow(x*x+y*y,power/2);const th=Math.atan2(y,x)*power;nx=r*Math.cos(th)+cRe;ny=r*Math.sin(th)+cIm; }
+        x=nx;y=ny;
+        if(x*x+y*y>1e10)break;
+      }
+    }
+
+    // Tooltip
+    if (showTooltip && mousePos) {
+      const mx = mousePos.x, my = mousePos.y;
+      const cx = centerX + (mx / canvasSize.w - 0.5) * rangeX;
+      const cy = centerY + (my / canvasSize.h - 0.5) * rangeY;
+      const text = `z = ${cx.toFixed(4)} ${cy >= 0 ? '+' : '−'} ${Math.abs(cy).toFixed(4)}i`;
+      ctx.fillStyle = 'rgba(15,23,42,0.8)';
+      const tw = ctx.measureText(text).width + 12;
+      const tx = Math.min(mx + 12, canvasSize.w - tw - 4);
+      const ty = Math.max(my - 28, 4);
+      ctx.fillRect(tx, ty, tw, 22);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '12px JetBrains Mono, monospace';
+      ctx.fillText(text, tx + 6, ty + 15);
+    }
+  }, [canvasSize, showAxes, showOrbit, orbitPoint, orbitTrailLength, showTooltip, mousePos, zoom, centerX, centerY, cRe, cIm, power]);
+
+  // Animate c
+  useEffect(() => {
+    if (!animateC || animPaused) { cancelAnimationFrame(animFrameRef.current); return; }
+    let angle = Math.atan2(cIm, cRe);
+    const tick = () => {
+      angle += (animSpeed * 2 * Math.PI) / (30 * 60);
+      setCRe(orbitRadius * Math.cos(angle));
+      setCIm(orbitRadius * Math.sin(angle));
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+    animFrameRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, [animateC, animPaused, orbitRadius, animSpeed]);
+
+  // Animate colors
+  useEffect(() => {
+    if (!animateColors) { cancelAnimationFrame(colorAnimRef.current); return; }
+    const tick = () => {
+      setColorOffset(prev => (prev + 0.002) % 1);
+      colorAnimRef.current = requestAnimationFrame(tick);
+    };
+    colorAnimRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(colorAnimRef.current);
+  }, [animateColors]);
+
+  // Render Mandelbrot mini-map
+  useEffect(() => {
+    const canvas = mandelbrotRef.current;
+    if (!canvas) return;
+    const size = 180;
+    canvas.width = size; canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.createImageData(size, size);
+    const data = imgData.data;
+    const mIter = 100;
+    for (let py = 0; py < size; py++) {
+      for (let px = 0; px < size; px++) {
+        const cr = (px / size) * 3.5 - 2.5;
+        const ci = (py / size) * 3.0 - 1.5;
+        let x = 0, y = 0, i = 0;
+        for (; i < mIter; i++) {
+          const x2 = x*x, y2 = y*y;
+          if (x2+y2 > 4) break;
+          y = 2*x*y + ci;
+          x = x2 - y2 + cr;
+        }
+        const idx = (py*size+px)*4;
+        if (i === mIter) {
+          data[idx]=15;data[idx+1]=23;data[idx+2]=42;data[idx+3]=255;
+        } else {
+          const t = i / mIter;
+          data[idx]=Math.floor(t*100);data[idx+1]=Math.floor(t*150);data[idx+2]=Math.floor(t*255);data[idx+3]=255;
+        }
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    mandelbrotDataRef.current = imgData;
+  }, []);
+
+  // Draw crosshair on Mandelbrot
+  useEffect(() => {
+    const canvas = mandelbrotRef.current;
+    if (!canvas || !mandelbrotDataRef.current) return;
+    const ctx = canvas.getContext('2d');
+    ctx.putImageData(mandelbrotDataRef.current, 0, 0);
+    const size = 180;
+    const px = ((cRe + 2.5) / 3.5) * size;
+    const py = ((cIm + 1.5) / 3.0) * size;
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px-8,py); ctx.lineTo(px+8,py); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px,py-8); ctx.lineTo(px,py+8); ctx.stroke();
+  }, [cRe, cIm]);
+
+  // Canvas interactions
+  const screenToComplex = useCallback((sx, sy) => {
+    const aspect = canvasSize.w / canvasSize.h;
+    const rangeY = 3.0 / zoom;
+    const rangeX = rangeY * aspect;
+    return {
+      x: centerX + (sx / canvasSize.w - 0.5) * rangeX,
+      y: centerY + (sy / canvasSize.h - 0.5) * rangeY,
+    };
+  }, [canvasSize, zoom, centerX, centerY]);
+
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const pt = screenToComplex(mx, my);
+    const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
+    const newZoom = Math.max(0.5, Math.min(10000, zoom * factor));
+    setCenterX(pt.x + (centerX - pt.x) * (zoom / newZoom));
+    setCenterY(pt.y + (centerY - pt.y) * (zoom / newZoom));
+    setZoom(newZoom);
+  }, [zoom, centerX, centerY, screenToComplex]);
+
+  const handleMouseDown = useCallback((e) => {
+    isDragging.current = true;
+    dragStart.current = {x: e.clientX, y: e.clientY, cx: centerX, cy: centerY};
+  }, [centerX, centerY]);
+
+  const handleMouseMove = useCallback((e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMousePos({x: e.clientX - rect.left, y: e.clientY - rect.top});
+    if (isDragging.current) {
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      const aspect = canvasSize.w / canvasSize.h;
+      const rangeY = 3.0 / zoom;
+      const rangeX = rangeY * aspect;
+      setCenterX(dragStart.current.cx - (dx / canvasSize.w) * rangeX);
+      setCenterY(dragStart.current.cy - (dy / canvasSize.h) * rangeY);
+    }
+  }, [canvasSize, zoom]);
+
+  const handleMouseUp = useCallback((e) => {
+    const wasDrag = isDragging.current && (Math.abs(e.clientX - dragStart.current.x) > 3 || Math.abs(e.clientY - dragStart.current.y) > 3);
+    isDragging.current = false;
+    if (!wasDrag && showOrbit) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pt = screenToComplex(e.clientX - rect.left, e.clientY - rect.top);
+      setOrbitPoint(pt);
+    }
+  }, [showOrbit, screenToComplex]);
+
+  const handleMandelbrotClick = useCallback((e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = e.clientX - rect.left, py = e.clientY - rect.top;
+    setCRe((px / 180) * 3.5 - 2.5);
+    setCIm((py / 180) * 3.0 - 1.5);
+  }, []);
+
+  // Keyboard
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') { setActiveInfo(null); setShowHelp(false); }
+      if (e.target.tagName === 'INPUT') return;
+      const panAmt = 0.1 / zoom;
+      if (e.key === 'ArrowLeft') setCenterX(p => p - panAmt);
+      if (e.key === 'ArrowRight') setCenterX(p => p + panAmt);
+      if (e.key === 'ArrowUp') setCenterY(p => p - panAmt);
+      if (e.key === 'ArrowDown') setCenterY(p => p + panAmt);
+      if (e.key === '=' || e.key === '+') setZoom(z => Math.min(10000, z * 1.2));
+      if (e.key === '-') setZoom(z => Math.max(0.5, z / 1.2));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [zoom]);
+
+  const cFormatted = `c = ${cRe >= 0 ? '' : '−'}${Math.abs(cRe).toFixed(3)} ${cIm >= 0 ? '+' : '−'} ${Math.abs(cIm).toFixed(3)}i`;
+
+  const sidebarWidth = sidebarOpen ? 320 : 0;
+
+  return (
+    <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',background:'#0f1729'}}>
+      {/* Top Bar */}
+      <div style={{height:44,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',background:'#1e293b',borderBottom:'1px solid rgba(148,163,184,0.15)',flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{background:'none',border:'none',color:'#f59e0b',fontSize:18,cursor:'pointer',padding:'2px 6px'}}>
+            {sidebarOpen ? '«' : '»'}
+          </button>
+          <span style={{color:'#f59e0b',fontSize:16}}>◆</span>
+          <span style={{fontWeight:600,fontSize:15}}>Julia Set Explorer</span>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <span className="mono" style={{fontSize:13,color:'#94a3b8'}}>{cFormatted}</span>
+          <button onClick={() => setShowHelp(true)} style={{width:28,height:28,borderRadius:'50%',border:'1px solid #f59e0b',background:'transparent',color:'#f59e0b',fontSize:14,cursor:'pointer',fontWeight:600}}>?</button>
+        </div>
+      </div>
+
+      <div style={{flex:1,display:'flex',overflow:'hidden',position:'relative'}}>
+        {/* Sidebar */}
+        {sidebarOpen && (
+          <div className="glass" style={{width:320,flexShrink:0,overflowY:'auto',overflowX:'hidden',borderRight:'1px solid rgba(148,163,184,0.15)'}}
+            onClick={() => setActiveInfo(null)}>
+
+            <AccordionSection title="Julia Set Parameters" open={sections.includes('params')} onToggle={() => toggleSection('params')}>
+              <SliderRow label="Real(c)" value={cRe} onChange={setCRe} min={-2} max={2} step={0.001} infoId="realC" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <SliderRow label="Imag(c)" value={cIm} onChange={setCIm} min={-2} max={2} step={0.001} infoId="imagC" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+
+              <div style={{marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center',marginBottom:4}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Mandelbrot c-Picker</span>
+                  <InfoButton id="mandelbrot" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <canvas ref={mandelbrotRef} width={180} height={180} onClick={handleMandelbrotClick}
+                  style={{borderRadius:8,cursor:'crosshair',border:'1px solid rgba(148,163,184,0.2)',width:180,height:180}}/>
+              </div>
+
+              <SliderRow label="Max Iterations" value={maxIter} onChange={v => setMaxIter(Math.round(v))} min={50} max={2000} step={10} infoId="maxIter" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <SliderRow label="Escape Radius" value={escapeRadius} onChange={setEscapeRadius} min={2} max={20} step={0.5} infoId="escapeRadius" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+            </AccordionSection>
+
+            <AccordionSection title="Viewport" open={sections.includes('viewport')} onToggle={() => toggleSection('viewport')}>
+              <SliderRow label="Zoom" value={zoom} onChange={setZoom} min={0.5} max={10000} step={0.1} log infoId="zoom" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <SliderRow label="Center X" value={centerX} onChange={setCenterX} min={-3} max={3} step={0.01} activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <SliderRow label="Center Y" value={centerY} onChange={setCenterY} min={-3} max={3} step={0.01} activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <button onClick={() => { setZoom(1); setCenterX(0); setCenterY(0); }}
+                style={{width:'100%',padding:'6px 0',borderRadius:8,border:'1px solid #f59e0b',background:'transparent',color:'#f59e0b',cursor:'pointer',fontSize:13,fontWeight:500}}>
+                Reset View
+              </button>
+            </AccordionSection>
+
+            <AccordionSection title="Coloring" open={sections.includes('coloring')} onToggle={() => toggleSection('coloring')}>
+              <div style={{marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center',marginBottom:4}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Color Palette</span>
+                  <InfoButton id="palette" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                  {Object.entries(PALETTES).map(([name, colors]) => (
+                    <button key={name} onClick={() => setPalette(name)}
+                      style={{padding:'4px 8px',borderRadius:6,border: palette===name ? '2px solid #f59e0b' : '1px solid rgba(148,163,184,0.2)',
+                        background: `linear-gradient(90deg, ${colors.join(',')})`,
+                        color:'white',fontSize:10,cursor:'pointer',fontWeight:500,textShadow:'0 1px 2px rgba(0,0,0,0.8)',minWidth:70}}>
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Smooth Coloring</span>
+                  <InfoButton id="smooth" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <Toggle value={smoothColoring} onChange={setSmoothColoring} label="Smooth coloring"/>
+              </div>
+              <SliderRow label="Cycle Speed" value={cycleSpeed} onChange={setCycleSpeed} min={0.1} max={10} step={0.1} infoId="cycleSpeed" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <SliderRow label="Color Offset" value={colorOffset} onChange={setColorOffset} min={0} max={1} step={0.01} infoId="colorOffset" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+              <div style={{marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center',marginBottom:4}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Interior Color</span>
+                  <InfoButton id="interior" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <div style={{display:'flex',gap:6}}>
+                  {INTERIOR_COLORS.map(c => (
+                    <button key={c} onClick={() => setInteriorColor(c)}
+                      style={{width:28,height:28,borderRadius:6,border: interiorColor===c ? '2px solid #f59e0b' : '1px solid rgba(148,163,184,0.3)',
+                        background: c==='transparent' ? 'repeating-conic-gradient(#333 0% 25%, #666 0% 50%) 50%/12px 12px' : c,cursor:'pointer'}}/>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Animate Colors</span>
+                  <InfoButton id="animColors" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <Toggle value={animateColors} onChange={setAnimateColors} label="Animate colors"/>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Generalization" open={sections.includes('general')} onToggle={() => toggleSection('general')}>
+              <SliderRow label="Power (n)" value={power} onChange={setPower} min={2} max={8} step={0.1} infoId="power" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+            </AccordionSection>
+
+            <AccordionSection title="Animation" open={sections.includes('anim')} onToggle={() => toggleSection('anim')}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Animate c</span>
+                  <InfoButton id="animateC" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <Toggle value={animateC} onChange={setAnimateC} label="Animate c"/>
+              </div>
+              {animateC && <>
+                <SliderRow label="Orbit Radius" value={orbitRadius} onChange={setOrbitRadius} min={0.1} max={1.5} step={0.01} infoId="orbitRadius" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                <SliderRow label="Animation Speed" value={animSpeed} onChange={setAnimSpeed} min={0.1} max={5} step={0.1} activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                <button onClick={() => setAnimPaused(p => !p)}
+                  style={{width:'100%',padding:'6px 0',borderRadius:8,background:animPaused?'#f59e0b':'transparent',border:'1px solid #f59e0b',
+                    color:animPaused?'#0f1729':'#f59e0b',cursor:'pointer',fontSize:13,fontWeight:500}}>
+                  {animPaused ? 'Resume' : 'Pause'}
+                </button>
+              </>}
+            </AccordionSection>
+
+            <AccordionSection title="Overlays" open={sections.includes('overlays')} onToggle={() => toggleSection('overlays')}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Show Axes</span>
+                  <InfoButton id="showAxes" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <Toggle value={showAxes} onChange={setShowAxes} label="Show axes"/>
+              </div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Show Orbit</span>
+                  <InfoButton id="showOrbit" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <Toggle value={showOrbit} onChange={setShowOrbit} label="Show orbit"/>
+              </div>
+              {showOrbit && <SliderRow label="Orbit Trail Length" value={orbitTrailLength} onChange={v => setOrbitTrailLength(Math.round(v))} min={10} max={500} step={10} activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  <span style={{fontSize:13,color:'#e2e8f0',fontWeight:500}}>Coordinate Tooltip</span>
+                  <InfoButton id="tooltip" activeInfo={activeInfo} setActiveInfo={setActiveInfo}/>
+                </div>
+                <Toggle value={showTooltip} onChange={setShowTooltip} label="Show tooltip"/>
+              </div>
+            </AccordionSection>
+
+            <AccordionSection title="Presets" open={sections.includes('presets')} onToggle={() => toggleSection('presets')}>
+              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                {PRESETS.map(p => (
+                  <button key={p.name} onClick={() => { setCRe(p.c.re); setCIm(p.c.im); setPalette(p.palette); setZoom(1); setCenterX(0); setCenterY(0); }}
+                    style={{padding:'5px 10px',borderRadius:16,border:'1px solid #f59e0b',background:'transparent',color:'#f59e0b',cursor:'pointer',fontSize:12,fontWeight:500,transition:'all 0.15s'}}
+                    onMouseEnter={e => { e.target.style.background='#f59e0b'; e.target.style.color='#0f1729'; }}
+                    onMouseLeave={e => { e.target.style.background='transparent'; e.target.style.color='#f59e0b'; }}>
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </AccordionSection>
+          </div>
+        )}
+
+        {/* Canvas Area */}
+        <div ref={containerRef} style={{flex:1,position:'relative',overflow:'hidden',cursor:'crosshair'}}
+          onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
+          onMouseLeave={() => { isDragging.current = false; setMousePos(null); }}>
+          <canvas ref={canvasRef} style={{position:'absolute',top:0,left:0,width:'100%',height:'100%'}}/>
+          <canvas ref={overlayRef} style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none'}}/>
+        </div>
+      </div>
+
+      {/* Status Bar */}
+      <div style={{height:28,display:'flex',alignItems:'center',gap:24,padding:'0 16px',background:'#1e293b',borderTop:'1px solid rgba(148,163,184,0.15)',flexShrink:0}}>
+        <span className="mono" style={{fontSize:11,color:'#94a3b8'}}>Zoom: {zoom < 10 ? zoom.toFixed(1) : Math.round(zoom)}x</span>
+        <span className="mono" style={{fontSize:11,color:'#94a3b8'}}>Center: ({centerX.toFixed(3)}, {centerY.toFixed(3)})</span>
+        <span className="mono" style={{fontSize:11,color:'#94a3b8'}}>Render: {renderTime}ms</span>
+        <span className="mono" style={{fontSize:11,color:'#94a3b8'}}>{canvasSize.w}×{canvasSize.h}</span>
+      </div>
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div style={{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.6)'}}
+          onClick={() => setShowHelp(false)}>
+          <div className="glass" style={{maxWidth:560,maxHeight:'80vh',overflow:'auto',borderRadius:16,padding:28,border:'1px solid rgba(245,158,11,0.2)'}}
+            onClick={e => e.stopPropagation()}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+              <h2 style={{color:'#f59e0b',fontSize:20,fontWeight:700}}>What is a Julia Set?</h2>
+              <button onClick={() => setShowHelp(false)} style={{background:'none',border:'none',color:'#94a3b8',fontSize:20,cursor:'pointer'}}>✕</button>
+            </div>
+            <div style={{fontSize:14,lineHeight:1.7,color:'#e2e8f0'}}>
+              <p style={{marginBottom:12}}>Julia sets are a family of fractals discovered by French mathematician Gaston Julia in 1918. They arise from an astonishingly simple formula applied repeatedly:</p>
+              <p className="mono" style={{color:'#f59e0b',fontSize:16,textAlign:'center',margin:'16px 0',fontWeight:600}}>z → z² + c</p>
+              <p style={{marginBottom:12}}>Starting from every point z₀ in the complex plane, we apply this formula over and over. Some starting points produce sequences that spiral off to infinity (they "escape"), while others remain bounded forever.</p>
+              <p style={{marginBottom:12}}>The <strong style={{color:'#fbbf24'}}>Julia set</strong> is the boundary between these two behaviors — and it turns out to be infinitely complex.</p>
+              <p style={{marginBottom:12}}>The constant <strong style={{color:'#fbbf24'}}>c</strong> determines the shape. Every different value of c produces a completely different fractal. When c is chosen from <em>inside</em> the Mandelbrot set, the Julia set is a single connected piece. When c is <em>outside</em> the Mandelbrot set, the Julia set shatters into infinitely many disconnected pieces called "Fatou dust."</p>
+              <p style={{marginBottom:12}}>The colors you see represent how quickly each point escapes — points that escape fast get one color, points that escape slowly get another, and points that never escape (inside the set) are colored separately.</p>
+              <p>Use the <strong style={{color:'#fbbf24'}}>Mandelbrot mini-map</strong> in the sidebar to explore how the choice of c transforms the fractal. Try the <strong style={{color:'#fbbf24'}}>presets</strong> to visit famous Julia sets, or adjust the <strong style={{color:'#fbbf24'}}>power</strong> to see generalizations beyond z².</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<JuliaSetExplorer />);
+</script>
+</body>
+</html>
