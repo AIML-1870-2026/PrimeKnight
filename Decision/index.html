@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scott Café vs DJ's Dugout</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Scott Café vs DJ's Dugout</h1>
+    <p class="subtitle">Weigh your factors. Watch the signal flow. See the winner.</p>
+  </header>
+
+  <div id="network-container">
+    <canvas id="network-canvas"></canvas>
+    <div id="factor-nodes"></div>
+    <div id="decision-node">
+      <div class="neuron-core"></div>
+      <div class="neuron-label">Decision<br>Neuron</div>
+    </div>
+    <div id="bias-node">
+      <div class="bias-dot"></div>
+      <div class="bias-content">
+        <span class="bias-label">Habit Bias</span>
+        <span class="bias-target">Scott Cafe</span>
+        <div class="slider-row">
+          <span class="slider-label">Importance</span>
+          <input type="range" id="bias-slider" min="0" max="10" value="5">
+          <span class="weight-value" id="bias-value">5</span>
+        </div>
+        <div class="slider-row multiplier-row">
+          <span class="slider-label mult-label" id="bias-mult-label">Multiplier 1x</span>
+          <input type="range" id="bias-multiplier-slider" min="0" max="9" value="3">
+        </div>
+      </div>
+    </div>
+    <div id="restaurant-nodes"></div>
+  </div>
+
+  <div id="message-bar"></div>
+
+  <div id="score-panel">
+    <h2>Score Breakdown</h2>
+    <div id="score-bars"></div>
+  </div>
+
+  <div id="controls">
+    <button id="add-factor-btn">+ Add Factor</button>
+    <button id="add-restaurant-btn">+ Add Restaurant</button>
+  </div>
+
+  <div id="modal-overlay" class="hidden">
+    <div id="modal">
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+      <div id="modal-actions">
+        <button id="modal-cancel">Cancel</button>
+        <button id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
