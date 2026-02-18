@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RGB Colour Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Oswald:wght@300;400;500;600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { min-height: 100vh; background: #020208; display: flex; flex-direction: column; color: #d0c8c0; font-family: sans-serif; }
+input[type=range] { -webkit-appearance: none; appearance: none; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #03030a; }
+::-webkit-scrollbar-thumb { background: #181828; border-radius: 3px; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Header */
+#header {
+  padding: 11px 22px;
+  flex-shrink: 0;
+  background: linear-gradient(to bottom, #04040e, #020208);
+  border-bottom: 1px solid #0d0d1c;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title-group { display: flex; flex-direction: column; gap: 2px; }
+.header-title { font-family: 'Cinzel', serif; font-size: 19px; font-weight: 700; color: #ede5d5; letter-spacing: 0.12em; }
+.header-subtitle { font-family: 'Courier Prime', monospace; font-size: 9px; color: rgba(201,162,39,0.33); letter-spacing: 0.28em; text-transform: uppercase; }
+.header-btns { display: flex; gap: 8px; }
+.btn { font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; border-radius: 7px; padding: 7px 17px; cursor: pointer; border: none; }
+.btn:hover { opacity: 0.8; }
+.btn-rand { background: linear-gradient(135deg, #b88018, #e8c048, #c9a020); color: #180e00; border: 1px solid rgba(201,160,32,0.4); }
+.btn-css, .btn-png { background: transparent; color: #44446a; border: 1px solid #181830; }
+
+/* Body */
+#body { flex: 1; display: flex; min-height: 0; }
+#left-col { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: auto; }
+#right-col { width: 255px; border-left: 1px solid #0c0c1c; background: #030310; padding: 15px 12px; overflow-y: auto; flex-shrink: 0; }
+
+/* Canvas */
+#canvas-wrapper { position: relative; width: 100%; height: clamp(260px, 48vw, 500px); flex-shrink: 0; }
+#stage-canvas { width: 100%; height: 100%; display: block; }
+#stage-watermark {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 0.44em;
+  color: rgba(201,160,32,0.22); text-transform: uppercase; pointer-events: none; white-space: nowrap;
+}
+
+/* Controls */
+#controls-area { padding: 15px 18px; display: flex; flex-direction: column; gap: 11px; }
+.card { background: #060610; border: 1px solid #0e0e20; border-radius: 12px; padding: 15px 18px; }
+.card-label { font-family: 'Courier Prime', monospace; font-size: 8px; color: #1e1e32; text-transform: uppercase; letter-spacing: 0.25em; margin-bottom: 12px; }
+
+/* Info bar */
+#info-bar { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.info-item { display: flex; flex-direction: column; gap: 3px; }
+.info-label { font-family: 'Courier Prime', monospace; font-size: 8px; color: #222238; text-transform: uppercase; letter-spacing: 0.12em; }
+.info-value-name { font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 500; color: #c9a227; }
+.info-value-hex { font-family: 'Courier Prime', monospace; font-size: 13px; color: #c0b8a8; cursor: pointer; }
+.info-value-rgb { font-family: 'Courier Prime', monospace; font-size: 13px; color: #c0b8a8; cursor: pointer; }
+.info-value-hsl { font-family: 'Courier Prime', monospace; font-size: 13px; color: #383850; }
+
+/* Dimmer board */
+#sliders-row { display: flex; gap: 18px; }
+.dimmer-slider { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.dimmer-label-row { display: flex; justify-content: space-between; align-items: baseline; }
+.dimmer-label { font-family: 'Oswald', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.18em; }
+.dimmer-value { font-family: 'Courier Prime', monospace; font-size: 13px; color: #999; }
+.dimmer-track-wrapper { position: relative; height: 20px; }
+.dimmer-track { height: 6px; border-radius: 3px; background: #0b0b1c; border: 1px solid #151525; box-shadow: inset 0 2px 4px rgba(0,0,0,0.7); position: absolute; top: 7px; left: 0; right: 0; }
+.dimmer-fill { height: 100%; border-radius: 3px; }
+.dimmer-thumb { position: absolute; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.5); pointer-events: none; z-index: 1; top: 0; }
+.dimmer-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 2; cursor: pointer; margin: 0; }
+
+/* Hex input */
+#hex-input-wrapper { position: relative; margin-top: 8px; }
+#hex-color-swatch { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border-radius: 3px; pointer-events: none; z-index: 1; }
+#hex-input {
+  width: 100%; padding: 9px 12px 9px 32px;
+  font-family: 'Courier Prime', monospace; font-size: 13px;
+  background: #090918; border: 1px solid #141424; border-radius: 7px;
+  color: #c0b8a8; outline: none;
+}
+#hex-input.error { background: #120505; border-color: #f87171; }
+
+/* WCAG */
+#wcag-row { display: flex; gap: 18px; }
+.wcag-item { display: flex; align-items: center; gap: 10px; flex: 1; }
+.wcag-swatch-box { width: 40px; height: 40px; border-radius: 8px; border: 1px solid #1c1c30; display: flex; align-items: center; justify-content: center; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 16px; flex-shrink: 0; }
+.wcag-info { display: flex; flex-direction: column; gap: 3px; }
+.wcag-ratio { font-family: 'Courier Prime', monospace; font-size: 12px; color: #aaa; }
+.wcag-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.wcag-badge { font-family: 'Courier Prime', monospace; font-size: 9px; padding: 1px 5px; border-radius: 3px; }
+.wcag-badge.pass { color: #4ade80; background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.15); }
+.wcag-badge.fail { color: #f87171; background: rgba(248,113,113,0.07); border: 1px solid rgba(248,113,113,0.15); }
+.wcag-bg-label { font-size: 9px; color: #2a2a42; font-family: 'Courier Prime', monospace; }
+
+/* Palette */
+#palette-header { font-family: 'Cinzel', serif; font-size: 9px; color: rgba(201,162,39,0.15); letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 12px; }
+#primary-swatch { height: 52px; border-radius: 9px; cursor: pointer; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px; }
+.palette-group { margin-bottom: 12px; }
+.palette-group-label { font-family: 'Courier Prime', monospace; font-size: 8px; color: #1e1e32; text-transform: uppercase; letter-spacing: 0.22em; margin-bottom: 6px; }
+.palette-swatches { display: flex; gap: 5px; }
+.p-swatch {
+  flex: 1; height: 50px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer; position: relative; transition: transform 0.15s, box-shadow 0.15s;
+}
+.p-swatch:hover { transform: scale(1.09) translateY(-3px); }
+.p-swatch-tooltip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: #08081a; border: 1px solid #1a1a30; border-radius: 6px; padding: 5px 9px;
+  box-shadow: 0 5px 18px rgba(0,0,0,0.75); pointer-events: none; white-space: nowrap;
+  z-index: 10; display: none;
+}
+.p-swatch:hover .p-swatch-tooltip,
+.p-swatch.copied .p-swatch-tooltip { display: block; }
+.tooltip-hex { font-family: 'Courier Prime', monospace; font-size: 10px; color: #ddd; }
+.tooltip-hsl { font-family: 'Courier Prime', monospace; font-size: 9px; color: #444; }
+.tooltip-copied { font-family: 'Courier Prime', monospace; font-size: 10px; color: #c9a227; }
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: #08081c; border: 1px solid #1e1e38; border-radius: 8px; padding: 9px 20px;
+  font-family: 'Courier Prime', monospace; font-size: 12px; color: #c9a227;
+  pointer-events: none; display: none; z-index: 100;
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="header-title-group">
+    <span class="header-title">RGB COLOUR STUDIO</span>
+    <span class="header-subtitle">Theatrical Additive Light Composition</span>
+  </div>
+  <div class="header-btns">
+    <button class="btn btn-rand" id="btn-rand">🎲 RAND</button>
+    <button class="btn btn-css" id="btn-css">⟨/⟩ CSS</button>
+    <button class="btn btn-png" id="btn-png">↓ PNG</button>
+  </div>
+</div>
+
+<div id="body">
+  <div id="left-col">
+    <div id="canvas-wrapper">
+      <canvas id="stage-canvas"></canvas>
+      <div id="stage-watermark">The Colour Stage</div>
+    </div>
+    <div id="controls-area">
+      <!-- Info bar -->
+      <div class="card">
+        <div id="info-bar">
+          <div class="info-item">
+            <span class="info-label">Name</span>
+            <span class="info-value-name" id="info-name">MediumOrchid</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">HEX</span>
+            <span class="info-value-hex" id="info-hex" title="Click to copy">#B428C8</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">RGB</span>
+            <span class="info-value-rgb" id="info-rgb" title="Click to copy">180  40  200</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">HSL</span>
+            <span class="info-value-hsl" id="info-hsl">291°  67%  47%</span>
+          </div>
+        </div>
+      </div>
+      <!-- Dimmer board -->
+      <div class="card">
+        <div class="card-label">Dimmer Board</div>
+        <div id="sliders-row"></div>
+        <div id="hex-input-wrapper">
+          <div id="hex-color-swatch"></div>
+          <input type="text" id="hex-input" maxlength="7" />
+        </div>
+      </div>
+      <!-- WCAG -->
+      <div class="card">
+        <div class="card-label">WCAG Contrast</div>
+        <div id="wcag-row">
+          <div class="wcag-item">
+            <div class="wcag-swatch-box" style="background:#fff;"><span id="wcag-white-aa">Aa</span></div>
+            <div class="wcag-info">
+              <span class="wcag-ratio" id="wcag-white-ratio">—</span>
+              <div class="wcag-badges" id="wcag-white-badges"></div>
+              <span class="wcag-bg-label">on White</span>
+            </div>
+          </div>
+          <div class="wcag-item">
+            <div class="wcag-swatch-box" style="background:#000;"><span id="wcag-black-aa">Aa</span></div>
+            <div class="wcag-info">
+              <span class="wcag-ratio" id="wcag-black-ratio">—</span>
+              <div class="wcag-badges" id="wcag-black-badges"></div>
+              <span class="wcag-bg-label">on Black</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="right-col">
+    <div id="palette-header">Colour Palette</div>
+    <div id="primary-swatch" title="Click to copy"></div>
+    <div id="palette-groups"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// =====================================================
+// COLOR UTILITIES
+// =====================================================
+
+function clamp(v) { return Math.max(0, Math.min(255, Math.round(v))); }
+
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToRgb(hex) {
+  const s = hex.replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(s)) return null;
+  return { r: parseInt(s.slice(0,2),16), g: parseInt(s.slice(2,4),16), b: parseInt(s.slice(4,6),16) };
+}
+
+function rgbToHsl(r, g, b) {
+  const rn = r/255, gn = g/255, bn = b/255;
+  const max = Math.max(rn,gn,bn), min = Math.min(rn,gn,bn);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l: parseFloat((l*100).toFixed(1)) };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h;
+  if (max === rn)      h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
+  else if (max === gn) h = ((bn - rn) / d + 2) / 6;
+  else                 h = ((rn - gn) / d + 4) / 6;
+  return { h: parseFloat((h*360).toFixed(1)), s: parseFloat((s*100).toFixed(1)), l: parseFloat((l*100).toFixed(1)) };
+}
+
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => { const k = (n + h/30) % 12; return l - a * Math.max(-1, Math.min(k-3, 9-k, 1)); };
+  return { r: clamp(f(0)*255), g: clamp(f(8)*255), b: clamp(f(4)*255) };
+}
+
+function hslToHex(h, s, l) {
+  const {r,g,b} = hslToRgb(h, s, l);
+  return rgbToHex(r, g, b);
+}
+
+function luminance(r, g, b) {
+  const f = v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+  return 0.2126*f(r) + 0.7152*f(g) + 0.0722*f(b);
+}
+
+function contrastRatio(r1,g1,b1, r2,g2,b2) {
+  const L1 = luminance(r1,g1,b1), L2 = luminance(r2,g2,b2);
+  return (Math.max(L1,L2)+0.05) / (Math.min(L1,L2)+0.05);
+}
+
+// =====================================================
+// COLOR NAMES
+// =====================================================
+
+const COLOR_NAMES = [
+  ['Black',0,0,0],['White',255,255,255],['Red',255,0,0],['Lime',0,255,0],['Blue',0,0,255],
+  ['Yellow',255,255,0],['Cyan',0,255,255],['Magenta',255,0,255],['Silver',192,192,192],
+  ['Gray',128,128,128],['Maroon',128,0,0],['Olive',128,128,0],['Green',0,128,0],
+  ['Purple',128,0,128],['Teal',0,128,128],['Navy',0,0,128],['Orange',255,165,0],
+  ['Coral',255,127,80],['Crimson',220,20,60],['DodgerBlue',30,144,255],['Gold',255,215,0],
+  ['HotPink',255,105,180],['IndianRed',205,92,92],['Lavender',230,230,250],
+  ['LightBlue',173,216,230],['LightCoral',240,128,128],['LightGreen',144,238,144],
+  ['LightPink',255,182,193],['LightSkyBlue',135,206,250],['LimeGreen',50,205,50],
+  ['MediumBlue',0,0,205],['MediumOrchid',186,85,211],['MediumPurple',147,112,219],
+  ['MediumSeaGreen',60,179,113],['MidnightBlue',25,25,112],['OrangeRed',255,69,0],
+  ['Orchid',218,112,214],['PaleGreen',152,251,152],['Pink',255,192,203],['Plum',221,160,221],
+  ['RoyalBlue',65,105,225],['SaddleBrown',139,69,19],['Salmon',250,128,114],
+  ['SandyBrown',244,164,96],['SeaGreen',46,139,87],['SkyBlue',135,206,235],
+  ['SlateBlue',106,90,205],['SpringGreen',0,255,127],['SteelBlue',70,130,180],
+  ['Tan',210,180,140],['Tomato',255,99,71],['Turquoise',64,224,208],['Violet',238,130,238],
+  ['YellowGreen',154,205,50],['Chartreuse',127,255,0],['DeepPink',255,20,147],
+  ['DeepSkyBlue',0,191,255],['FireBrick',178,34,34],['ForestGreen',34,139,34],
+  ['Chocolate',210,105,30],['Sienna',160,82,45],['Peru',205,133,63],['Goldenrod',218,165,32],
+  ['DarkOrange',255,140,0],['DarkRed',139,0,0],['DarkGreen',0,100,0],['DarkViolet',148,0,211],
+  ['Indigo',75,0,130],['BlueViolet',138,43,226],['CornflowerBlue',100,149,237],
+  ['CadetBlue',95,158,160],['Khaki',240,230,140],['BurlyWood',222,184,135],
+  ['LightSalmon',255,160,122],['RebeccaPurple',102,51,153],
+];
+
+function findColorName(r, g, b) {
+  let best = COLOR_NAMES[0][0], bestD = Infinity;
+  for (const [name,cr,cg,cb] of COLOR_NAMES) {
+    const d = (r-cr)**2 + (g-cg)**2 + (b-cb)**2;
+    if (d < bestD) { bestD = d; best = name; }
+  }
+  return best;
+}
+
+// =====================================================
+// PALETTE GENERATOR
+// =====================================================
+
+function makePalette(r, g, b) {
+  const {h, s, l} = rgbToHsl(r, g, b);
+  const S = Math.min(100, Math.max(s, 55));
+  const L = Math.min(Math.max(l, 40), 58);
+  return {
+    complementary:  [hslToHex((h+180)%360, S, L)],
+    analogous:      [hslToHex((h+30)%360, S, L), hslToHex((h-30+360)%360, S, L)],
+    triadic:        [hslToHex((h+120)%360, S, L), hslToHex((h+240)%360, S, L)],
+    splitComp:      [hslToHex((h+150)%360, S, L), hslToHex((h+210)%360, S, L)],
+    tetradic:       [hslToHex((h+90)%360, S, L), hslToHex((h+180)%360, S, L), hslToHex((h+270)%360, S, L)],
+    monochromatic:  [14,28,44,60,76].map(lt => hslToHex(h, S, lt)),
+  };
+}
+
+// =====================================================
+// STATE
+// =====================================================
+
+const state = { r: 180, g: 40, b: 200, hexFocus: false, hexInput: '', hexErr: false, toastTimer: null };
+const rgbRef = { r: 180, g: 40, b: 200 };
+
+function showToast(msg) {
+  if (state.toastTimer) clearTimeout(state.toastTimer);
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.animation = 'none'; el.offsetHeight;
+  el.style.animation = 'toastIn 0.18s ease';
+  state.toastTimer = setTimeout(() => { el.style.display = 'none'; }, 1800);
+}
+
+function copyToClipboard(text, msg) {
+  navigator.clipboard.writeText(text).then(() => showToast(msg || 'Copied!'));
+}
+
+// =====================================================
+// CANVAS
+// =====================================================
+
+const canvas = document.getElementById('stage-canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+
+const ro = new ResizeObserver(entries => {
+  for (const e of entries) {
+    const r = e.contentRect;
+    canvas.width = r.width * dpr;
+    canvas.height = r.height * dpr;
+  }
+});
+ro.observe(canvas);
+
+// roundRect polyfill
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (w < 2*r) r = w/2; if (h < 2*r) r = h/2;
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.arcTo(x+w, y, x+w, y+h, r);
+    this.arcTo(x+w, y+h, x, y+h, r);
+    this.arcTo(x, y+h, x, y, r);
+    this.arcTo(x, y, x+w, y, r);
+    this.closePath();
+    return this;
+  };
+}
+
+function drawStage(ctx, W, H, t, r, g, b) {
+  const archL  = W * 0.10;
+  const archR  = W * 0.90;
+  const archT  = H * 0.04;
+  const cInL   = W * 0.20;
+  const cInR   = W * 0.80;
+  const floorT = H * 0.54;
+  const floorB = H * 0.97;
+  const rigY   = archT + H * 0.09;
+
+  // Step 1 — Theater Void
+  ctx.fillStyle = '#010106';
+  ctx.fillRect(0, 0, W, H);
+
+  // Step 2 — Cyclorama
+  {
+    const grad = ctx.createLinearGradient(0, archT, 0, floorT + 8);
+    grad.addColorStop(0, '#05050e');
+    grad.addColorStop(1, '#0b0b14');
+    ctx.fillStyle = grad;
+    ctx.fillRect(cInL, archT, cInR - cInL, floorT + 8 - archT);
+  }
+
+  // Step 3 — Stage Floor
+  {
+    const fTL = { x: cInL + (cInR-cInL)*0.05, y: floorT };
+    const fTR = { x: cInR - (cInR-cInL)*0.05, y: floorT };
+    const fBL = { x: archL + W*0.025, y: floorB };
+    const fBR = { x: archR - W*0.025, y: floorB };
+
+    const fg = ctx.createLinearGradient(0, floorT, 0, floorB);
+    fg.addColorStop(0, '#1c1309');
+    fg.addColorStop(0.4, '#151007');
+    fg.addColorStop(1, '#0c0905');
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(fTL.x, fTL.y); ctx.lineTo(fTR.x, fTR.y);
+    ctx.lineTo(fBR.x, fBR.y); ctx.lineTo(fBL.x, fBL.y);
+    ctx.closePath();
+    ctx.fillStyle = fg; ctx.fill();
+    ctx.clip();
+
+    // Planks
+    for (let i = 0; i <= 24; i++) {
+      const f = i/24;
+      const y  = floorT + (floorB-floorT)*f;
+      const lx = fTL.x + (fBL.x-fTL.x)*f;
+      const rx = fTR.x + (fBR.x-fTR.x)*f;
+      ctx.beginPath(); ctx.moveTo(lx,y); ctx.lineTo(rx,y);
+      if (i%4===0) { ctx.strokeStyle='rgba(40,26,12,0.9)'; ctx.lineWidth=1.4; }
+      else          { ctx.strokeStyle='rgba(24,16,8,0.6)';  ctx.lineWidth=0.7; }
+      ctx.stroke();
+    }
+
+    // Convergence lines
+    for (let i = 1; i <= 9; i++) {
+      const f  = i/10;
+      const bx = fBL.x + (fBR.x-fBL.x)*f;
+      const tx = W*0.5 + (bx-W*0.5)*0.06;
+      ctx.beginPath(); ctx.moveTo(tx,floorT); ctx.lineTo(bx,floorB);
+      ctx.strokeStyle='rgba(22,14,6,0.5)'; ctx.lineWidth=0.5; ctx.stroke();
+    }
+
+    // Floor gloss
+    const glossH = (floorB-floorT)*0.22;
+    const gg = ctx.createLinearGradient(0, floorT, 0, floorT+glossH);
+    gg.addColorStop(0, 'rgba(255,235,180,0.04)');
+    gg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gg;
+    ctx.fillRect(fTL.x, floorT, fTR.x-fTL.x, glossH);
+    ctx.restore();
+  }
+
+  // Step 4 — Spotlight Beams & Floor Pools
+  const drift = (amp, freq, phase) => amp * Math.sin(freq*t + phase);
+
+  const mixLx = W*0.5 + drift(W*0.014, 0.35, 0.0);
+  const mixLy = floorT + (floorB-floorT)*0.32 + drift(H*0.009, 0.27, 1.5);
+
+  const fixtures = [
+    { id:0, fx:W*0.29+drift(W*0.008,0.37,0.0), fy:rigY+H*0.04,
+      lx:mixLx, ly:mixLy, col:[r,0,0] },
+    { id:1, fx:W*0.71+drift(W*0.008,0.32,2.0), fy:rigY+H*0.04,
+      lx:mixLx, ly:mixLy, col:[0,g,0] },
+    { id:2, fx:W*0.50+drift(W*0.008,0.44,3.9), fy:rigY+H*0.02,
+      lx:mixLx, ly:mixLy, col:[0,0,b] },
+  ];
+
+  ctx.globalCompositeOperation = 'screen';
+
+  for (const fix of fixtures) {
+    const [cr,cg,cb] = fix.col;
+    if (cr+cg+cb < 4) continue;
+
+    const dx = fix.lx-fix.fx, dy = fix.ly-fix.fy;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const nx = -dy/len, ny = dx/len;
+    const hw0 = 4, hw1 = W*0.070;
+
+    const trap = (hwT, hwB, stops) => {
+      const p0={x:fix.fx+nx*hwT, y:fix.fy+ny*hwT};
+      const p1={x:fix.fx-nx*hwT, y:fix.fy-ny*hwT};
+      const p2={x:fix.lx-nx*hwB, y:fix.ly-ny*hwB};
+      const p3={x:fix.lx+nx*hwB, y:fix.ly+ny*hwB};
+      const g2 = ctx.createLinearGradient(fix.fx,fix.fy, fix.lx,fix.ly);
+      stops.forEach(([p,a]) => g2.addColorStop(p, `rgba(${cr},${cg},${cb},${a})`));
+      ctx.beginPath();
+      ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y);
+      ctx.lineTo(p2.x,p2.y); ctx.lineTo(p3.x,p3.y);
+      ctx.closePath(); ctx.fillStyle=g2; ctx.fill();
+    };
+
+    trap(hw0*2.2, hw1*1.7, [[0,0.45],[0.12,0.18],[0.6,0.07],[1,0.01]]);
+    trap(hw0,     hw1,     [[0,0.85],[0.08,0.52],[0.45,0.22],[1,0.05]]);
+    trap(hw0*0.25,hw1*0.22,[[0,0.95],[0.15,0.60],[0.55,0.18],[1,0.0]]);
+  }
+
+  // Combined-color floor pool — shows the actual mixed rgb(r,g,b) where all beams meet
+  if (r+g+b > 8) {
+    const pr=W*0.09, pyS=0.28;
+
+    // Clip to ellipse first, then fill with gradient entirely in canvas coords
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(mixLx, mixLy, pr, pr*pyS, 0, 0, Math.PI*2);
+    ctx.clip();
+    const pg = ctx.createRadialGradient(mixLx, mixLy, 0, mixLx, mixLy, pr);
+    pg.addColorStop(0,    `rgba(${r},${g},${b},1.0)`);
+    pg.addColorStop(0.30, `rgba(${r},${g},${b},0.75)`);
+    pg.addColorStop(0.70, `rgba(${r},${g},${b},0.25)`);
+    pg.addColorStop(1,    `rgba(${r},${g},${b},0.0)`);
+    ctx.fillStyle = pg;
+    ctx.fillRect(mixLx-pr, mixLy-pr*pyS, pr*2, pr*pyS*2);
+    ctx.restore();
+
+    // Reflection shimmer below pool
+    const shimLy = mixLy + pr*pyS*0.8;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(mixLx, shimLy, pr*0.85, pr*pyS*0.5, 0, 0, Math.PI*2);
+    ctx.clip();
+    const rg = ctx.createRadialGradient(mixLx, shimLy, 0, mixLx, shimLy, pr*0.85);
+    rg.addColorStop(0, `rgba(${r},${g},${b},0.28)`);
+    rg.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle = rg;
+    ctx.fillRect(mixLx-pr, shimLy-pr*pyS, pr*2, pr*pyS*2);
+    ctx.restore();
+  }
+
+  // Step 5 — Dust particles
+  for (const fix of fixtures) {
+    const [cr,cg,cb] = fix.col;
+    if (cr+cg+cb < 8) continue;
+    const dx=fix.lx-fix.fx, dy=fix.ly-fix.fy;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const nx=-dy/len, ny=dx/len;
+    for (let i=0; i<30; i++) {
+      const seed=i*131.4+fix.id*1777;
+      const prog=((t*0.055+(seed%100)*0.01)%1.0);
+      const bx=fix.fx+(fix.lx-fix.fx)*prog;
+      const by=fix.fy+(fix.ly-fix.fy)*prog;
+      const maxSpread=W*0.05*prog;
+      const sOff=(Math.sin(seed*6.2)*2-1)*maxSpread;
+      const px=bx+nx*sOff, py=by+ny*sOff;
+      const fade=Math.max(0,1-Math.abs(sOff)/(maxSpread+0.001));
+      const twinkle=0.3+0.7*Math.abs(Math.sin(seed*3.3+t*0.9));
+      const alpha=0.42*fade*twinkle;
+      const sz=0.8+Math.abs(Math.sin(seed*5.1))*1.5;
+      ctx.beginPath(); ctx.arc(px,py,sz,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${cr},${cg},${cb},${alpha})`; ctx.fill();
+    }
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Step 6 — Velvet Curtains
+  for (const side of ['left','right']) {
+    const isLeft = side==='left';
+    const outer = isLeft ? archL : archR;
+    const inner = isLeft ? cInL  : cInR;
+    const totalW = Math.abs(inner-outer);
+    const numFolds=12, foldW=totalW/numFolds;
+
+    for (let f=0; f<numFolds; f++) {
+      let leftX, rightX;
+      if (isLeft) { leftX=archL+f*foldW; rightX=leftX+foldW; }
+      else         { rightX=archR-f*foldW; leftX=rightX-foldW; }
+
+      const isPeak = f%2===0;
+      const swayPhase = f*0.42;
+      const sway = (isLeft?1:-1) * foldW*0.09*Math.sin(0.14*t+swayPhase);
+
+      const baseR=isPeak?100:50, baseG=isPeak?9:4, baseB_=isPeak?16:8;
+
+      ctx.beginPath();
+      ctx.moveTo(leftX, archT);
+      ctx.bezierCurveTo(leftX+sway*0.3,archT+H*0.3, leftX+sway*0.7,archT+H*0.6, leftX+sway,floorB);
+      ctx.lineTo(rightX+sway, floorB);
+      ctx.bezierCurveTo(rightX+sway*0.7,archT+H*0.6, rightX+sway*0.3,archT+H*0.3, rightX,archT);
+      ctx.closePath();
+
+      const cg2 = ctx.createLinearGradient(leftX,0,rightX,0);
+      if (isPeak) {
+        cg2.addColorStop(0,   `rgb(${Math.round(baseR*0.4)},${Math.round(baseG*0.4)},${Math.round(baseB_*0.4)})`);
+        cg2.addColorStop(0.3, `rgb(${Math.round(baseR*0.88)},${Math.round(baseG*0.88)},${Math.round(baseB_*0.88)})`);
+        cg2.addColorStop(0.5, `rgb(${baseR+22},${baseG+4},${baseB_+6})`);
+        cg2.addColorStop(0.7, `rgb(${Math.round(baseR*0.88)},${Math.round(baseG*0.88)},${Math.round(baseB_*0.88)})`);
+        cg2.addColorStop(1,   `rgb(${Math.round(baseR*0.4)},${Math.round(baseG*0.4)},${Math.round(baseB_*0.4)})`);
+      } else {
+        cg2.addColorStop(0,    `rgb(${baseR},${baseG},${baseB_})`);
+        cg2.addColorStop(0.45, `rgb(${Math.round(baseR*0.55)},${Math.round(baseG*0.55)},${Math.round(baseB_*0.55)})`);
+        cg2.addColorStop(1,    `rgb(${baseR},${baseG},${baseB_})`);
+      }
+      ctx.fillStyle=cg2; ctx.fill();
+    }
+
+    // Inner shadow
+    const shdX = isLeft ? cInL-foldW*0.6 : cInR;
+    const shdG = ctx.createLinearGradient(shdX,0,shdX+foldW*0.6,0);
+    if (isLeft) { shdG.addColorStop(0,'rgba(0,0,0,0)'); shdG.addColorStop(1,'rgba(0,0,0,0.4)'); }
+    else        { shdG.addColorStop(0,'rgba(0,0,0,0.4)'); shdG.addColorStop(1,'rgba(0,0,0,0)'); }
+    ctx.fillStyle=shdG; ctx.fillRect(shdX, archT, foldW*0.6, floorB-archT);
+
+    // Batten rod
+    const batX = isLeft ? archL : cInR;
+    const batG = ctx.createLinearGradient(0,archT-5,0,archT+4);
+    batG.addColorStop(0,'#5a5a5a'); batG.addColorStop(0.5,'#cccccc'); batG.addColorStop(1,'#3a3a3a');
+    ctx.fillStyle=batG; ctx.fillRect(batX, archT-5, totalW, 9);
+
+    // Ring clips
+    for (let i=0; i<9; i++) {
+      const cx = batX + (totalW/8)*i;
+      ctx.beginPath(); ctx.arc(cx,archT-1,3.5,0,Math.PI*2); ctx.fillStyle='#999'; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx,archT-1,2,0,Math.PI*2);   ctx.fillStyle='#555'; ctx.fill();
+    }
+  }
+
+  // Step 7 — Proscenium Mask
+  ctx.fillStyle='#010108';
+  ctx.fillRect(0,0,archL,H);
+  ctx.fillRect(archR,0,W-archR,H);
+  ctx.fillRect(0,0,W,archT);
+
+  // Gold top beam
+  const atg = ctx.createLinearGradient(0,archT-H*0.022,0,archT-H*0.022+H*0.048);
+  atg.addColorStop(0,'#181004'); atg.addColorStop(0.18,'#634810'); atg.addColorStop(0.42,'#d49618');
+  atg.addColorStop(0.58,'#f0cc44'); atg.addColorStop(0.78,'#c08818'); atg.addColorStop(1,'#1e1606');
+  ctx.fillStyle=atg; ctx.fillRect(archL-2,archT-H*0.022,(archR-archL)+4,H*0.048);
+
+  // Gold left pillar
+  const lpg = ctx.createLinearGradient(archL-W*0.028,0,archL-W*0.028+W*0.04,0);
+  lpg.addColorStop(0,'#18100a'); lpg.addColorStop(0.35,'#c98e18');
+  lpg.addColorStop(0.70,'#f0cc44'); lpg.addColorStop(1,'#2a1c08');
+  ctx.fillStyle=lpg; ctx.fillRect(archL-W*0.028,archT,W*0.04,H);
+
+  // Gold right pillar
+  const rpg = ctx.createLinearGradient(archR-W*0.012,0,archR-W*0.012+W*0.04,0);
+  rpg.addColorStop(0,'#2a1c08'); rpg.addColorStop(0.30,'#f0cc44');
+  rpg.addColorStop(0.65,'#c98e18'); rpg.addColorStop(1,'#18100a');
+  ctx.fillStyle=rpg; ctx.fillRect(archR-W*0.012,archT,W*0.04,H);
+
+  // Relief lines
+  ctx.strokeStyle='rgba(240,204,68,0.22)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(archL+W*0.013,archT+H*0.03); ctx.lineTo(archL+W*0.013,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(archR-W*0.013,archT+H*0.03); ctx.lineTo(archR-W*0.013,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(archL,archT-H*0.025); ctx.lineTo(archR,archT-H*0.025); ctx.stroke();
+
+  // Step 8 — Lighting Rig Bar
+  const rigG = ctx.createLinearGradient(0,rigY-4.5,0,rigY+4.5);
+  rigG.addColorStop(0,'#2a2a2a'); rigG.addColorStop(0.3,'#888');
+  rigG.addColorStop(0.7,'#777'); rigG.addColorStop(1,'#1a1a1a');
+  ctx.fillStyle=rigG; ctx.fillRect(cInL-W*0.01,rigY-4.5,(cInR-cInL)+W*0.02,9);
+
+  for (let i=0; i<=10; i++) {
+    const cx = cInL+(cInR-cInL)*(i/10);
+    ctx.beginPath(); ctx.arc(cx,rigY,5,0,Math.PI*2); ctx.fillStyle='#444'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,rigY,3,0,Math.PI*2); ctx.fillStyle='#6a6a6a'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx,rigY+5); ctx.lineTo(cx,rigY+13);
+    ctx.strokeStyle='#222'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // Step 9 — Spotlight Fixture Units
+  for (const fix of fixtures) {
+    const [cr,cg,cb] = fix.col;
+    const yokeY = rigY+13;
+
+    ctx.strokeStyle='#505050'; ctx.lineWidth=2.5; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(fix.fx-12,yokeY); ctx.lineTo(fix.fx+12,yokeY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fix.fx-10,yokeY); ctx.lineTo(fix.fx-10,yokeY+9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fix.fx+10,yokeY); ctx.lineTo(fix.fx+10,yokeY+9); ctx.stroke();
+
+    ctx.save();
+    ctx.translate(fix.fx, yokeY+9);
+    ctx.rotate(Math.atan2(fix.ly-fix.fy, fix.lx-fix.fx) - Math.PI/2);
+
+    const bg3 = ctx.createLinearGradient(-11,0,11,0);
+    bg3.addColorStop(0,'#181818'); bg3.addColorStop(0.35,'#383838');
+    bg3.addColorStop(0.65,'#303030'); bg3.addColorStop(1,'#141414');
+    ctx.fillStyle=bg3; ctx.strokeStyle='#444'; ctx.lineWidth=0.6;
+    ctx.roundRect(-11,-4,22,30,4); ctx.fill(); ctx.stroke();
+
+    ctx.strokeStyle='#1e1e1e'; ctx.lineWidth=0.8;
+    for (const vy of [3,7,11,15,19]) {
+      ctx.beginPath(); ctx.moveTo(-8,vy); ctx.lineTo(8,vy); ctx.stroke();
+    }
+
+    const active = (cr+cg+cb > 5);
+    const lA = active ? 0.95 : 0.15;
+    const lg2 = ctx.createRadialGradient(0,24,0,0,24,9);
+    lg2.addColorStop(0, `rgba(${Math.min(cr+55,255)},${Math.min(cg+55,255)},${Math.min(cb+55,255)},${lA})`);
+    lg2.addColorStop(0.5, `rgba(${cr},${cg},${cb},${lA*0.65})`);
+    lg2.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+    ctx.beginPath(); ctx.arc(0,24,9,0,Math.PI*2);
+    ctx.fillStyle=lg2; ctx.fill();
+    ctx.strokeStyle = active ? `rgba(${cr},${cg},${cb},0.55)` : '#2a2a2a';
+    ctx.lineWidth=1; ctx.stroke();
+
+    if (active) {
+      const prev = ctx.globalCompositeOperation;
+      ctx.globalCompositeOperation='screen';
+      const glg = ctx.createRadialGradient(0,24,0,0,24,20);
+      glg.addColorStop(0,`rgba(${cr},${cg},${cb},0.55)`);
+      glg.addColorStop(1,`rgba(${cr},${cg},${cb},0)`);
+      ctx.beginPath(); ctx.arc(0,24,20,0,Math.PI*2);
+      ctx.fillStyle=glg; ctx.fill();
+      ctx.globalCompositeOperation=prev;
+    }
+    ctx.restore();
+  }
+
+  // Step 10 — Vignette
+  ctx.globalCompositeOperation='source-over';
+  const vg = ctx.createRadialGradient(W*0.5,H*0.58,H*0.08, W*0.5,H*0.58,H*0.76);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(0.28,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.84)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+
+  // Step 11 — Scanlines
+  ctx.globalAlpha=0.02; ctx.fillStyle='#000';
+  for (let y=0; y<H; y+=3) ctx.fillRect(0,y,W,1);
+  ctx.globalAlpha=1;
+}
+
+function animate(ts) {
+  const t = ts * 0.001;
+  const {r,g,b} = rgbRef;
+  if (canvas.width>0 && canvas.height>0) drawStage(ctx, canvas.width, canvas.height, t, r, g, b);
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
+// =====================================================
+// DIMMER SLIDERS
+// =====================================================
+
+const CHANNELS = [
+  { id:'r', label:'RED',   trackColor:'#ff2020', glowColor:'#ff8080' },
+  { id:'g', label:'GREEN', trackColor:'#20ee44', glowColor:'#80ff90' },
+  { id:'b', label:'BLUE',  trackColor:'#2244ff', glowColor:'#88aaff' },
+];
+const sliderEls = {};
+const slidersRow = document.getElementById('sliders-row');
+
+CHANNELS.forEach(ch => {
+  const wrap = document.createElement('div');
+  wrap.className = 'dimmer-slider';
+
+  const labelRow = document.createElement('div');
+  labelRow.className = 'dimmer-label-row';
+
+  const lbl = document.createElement('span');
+  lbl.className = 'dimmer-label';
+  lbl.style.color = ch.glowColor;
+  lbl.textContent = ch.label;
+
+  const valEl = document.createElement('span');
+  valEl.className = 'dimmer-value';
+  valEl.id = `sv-${ch.id}`;
+  labelRow.append(lbl, valEl);
+
+  const trackWrap = document.createElement('div');
+  trackWrap.className = 'dimmer-track-wrapper';
+
+  const track = document.createElement('div');
+  track.className = 'dimmer-track';
+
+  const fill = document.createElement('div');
+  fill.className = 'dimmer-fill';
+
+  const thumb = document.createElement('div');
+  thumb.className = 'dimmer-thumb';
+
+  const inp = document.createElement('input');
+  inp.type = 'range'; inp.min=0; inp.max=255; inp.step=1;
+  inp.className = 'dimmer-input';
+  inp.value = state[ch.id];
+
+  track.appendChild(fill);
+  trackWrap.append(track, thumb, inp);
+  wrap.append(labelRow, trackWrap);
+  slidersRow.appendChild(wrap);
+
+  sliderEls[ch.id] = { inp, fill, thumb, val: valEl, trackColor: ch.trackColor, glowColor: ch.glowColor };
+
+  inp.addEventListener('input', () => {
+    state[ch.id] = parseInt(inp.value);
+    rgbRef[ch.id] = state[ch.id];
+    updateUI();
+  });
+});
+
+// =====================================================
+// UI UPDATE
+// =====================================================
+
+function updateUI() {
+  const {r,g,b} = state;
+  const hex = rgbToHex(r,g,b);
+  const hsl = rgbToHsl(r,g,b);
+  const colorName = findColorName(r,g,b);
+  const pal = makePalette(r,g,b);
+  const crW = contrastRatio(r,g,b,255,255,255);
+  const crB = contrastRatio(r,g,b,0,0,0);
+
+  // Info bar
+  document.getElementById('info-name').textContent = colorName;
+  document.getElementById('info-hex').textContent = hex.toUpperCase();
+  document.getElementById('info-rgb').textContent = `${r}  ${g}  ${b}`;
+  document.getElementById('info-hsl').textContent = `${hsl.h}°  ${hsl.s}%  ${hsl.l}%`;
+
+  // Sliders
+  for (const ch of CHANNELS) {
+    const v = state[ch.id];
+    const pct = (v/255)*100;
+    const el = sliderEls[ch.id];
+    el.inp.value = v;
+    el.val.textContent = v;
+    el.fill.style.width = pct+'%';
+    el.fill.style.background = `linear-gradient(to right, ${el.trackColor}44, ${el.trackColor}cc, ${el.trackColor})`;
+    el.fill.style.boxShadow = v>0 ? `0 0 12px ${el.trackColor}80` : 'none';
+    el.thumb.style.left = `calc(${pct}% - 10px)`;
+    el.thumb.style.background = `radial-gradient(circle at 40% 35%, rgba(255,255,255,0.88), ${el.trackColor} 68%)`;
+    el.thumb.style.boxShadow = v>0 ? `0 0 18px ${el.trackColor}aa, 0 2px 6px rgba(0,0,0,0.6)` : '0 2px 5px rgba(0,0,0,0.5)';
+  }
+
+  // Hex input
+  const hexInp = document.getElementById('hex-input');
+  const hexSwatch = document.getElementById('hex-color-swatch');
+  if (!state.hexFocus) { hexInp.value = hex.toUpperCase(); hexInp.classList.remove('error'); }
+  hexSwatch.style.background = hex;
+  hexSwatch.style.boxShadow = `0 0 8px ${hex}66`;
+
+  // WCAG
+  document.getElementById('wcag-white-aa').style.color = hex;
+  document.getElementById('wcag-white-ratio').textContent = `${crW.toFixed(2)}:1`;
+  const wb = document.getElementById('wcag-white-badges');
+  wb.innerHTML = '';
+  wb.append(makeBadge(crW>=4.5,'AA'), makeBadge(crW>=7.0,'AAA'));
+
+  document.getElementById('wcag-black-aa').style.color = hex;
+  document.getElementById('wcag-black-ratio').textContent = `${crB.toFixed(2)}:1`;
+  const bb = document.getElementById('wcag-black-badges');
+  bb.innerHTML = '';
+  bb.append(makeBadge(crB>=4.5,'AA'), makeBadge(crB>=7.0,'AAA'));
+
+  // Primary swatch
+  const ps = document.getElementById('primary-swatch');
+  ps.style.background = hex;
+  ps.style.boxShadow = `0 4px 18px ${hex}60, inset 0 1px 0 rgba(255,255,255,0.1)`;
+
+  // Palette
+  updatePalette(pal);
+}
+
+function makeBadge(pass, level) {
+  const s = document.createElement('span');
+  s.className = `wcag-badge ${pass?'pass':'fail'}`;
+  s.textContent = pass ? `${level} ✓` : `${level} ✗`;
+  return s;
+}
+
+const PAL_GROUPS = [
+  {key:'complementary', label:'Complementary'},
+  {key:'analogous',     label:'Analogous'},
+  {key:'triadic',       label:'Triadic'},
+  {key:'splitComp',     label:'Split-Comp'},
+  {key:'tetradic',      label:'Tetradic'},
+  {key:'monochromatic', label:'Monochromatic'},
+];
+
+function updatePalette(pal) {
+  const container = document.getElementById('palette-groups');
+  container.innerHTML = '';
+  for (const {key, label} of PAL_GROUPS) {
+    const group = document.createElement('div');
+    group.className = 'palette-group';
+    const lbl = document.createElement('div');
+    lbl.className = 'palette-group-label';
+    lbl.textContent = label;
+    const row = document.createElement('div');
+    row.className = 'palette-swatches';
+    for (const color of pal[key]) row.appendChild(makePaletteSwatch(color));
+    group.append(lbl, row);
+    container.appendChild(group);
+  }
+}
+
+function makePaletteSwatch(color) {
+  const div = document.createElement('div');
+  div.className = 'p-swatch';
+  div.style.background = color;
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'p-swatch-tooltip';
+
+  const rgb2 = hexToRgb(color);
+  const hsl2 = rgb2 ? rgbToHsl(rgb2.r,rgb2.g,rgb2.b) : {h:0,s:0,l:0};
+
+  const hexSpan = document.createElement('div');
+  hexSpan.className = 'tooltip-hex';
+  hexSpan.textContent = color.toUpperCase();
+
+  const hslSpan = document.createElement('div');
+  hslSpan.className = 'tooltip-hsl';
+  hslSpan.textContent = `H${hsl2.h}° S${hsl2.s}% L${hsl2.l}%`;
+
+  tooltip.append(hexSpan, hslSpan);
+  div.appendChild(tooltip);
+
+  div.addEventListener('click', () => {
+    navigator.clipboard.writeText(color).then(() => {
+      div.classList.add('copied');
+      hexSpan.style.display = 'none';
+      hslSpan.style.display = 'none';
+      const copiedEl = document.createElement('div');
+      copiedEl.className = 'tooltip-copied';
+      copiedEl.textContent = '✓ Copied!';
+      tooltip.appendChild(copiedEl);
+      div.style.boxShadow = `0 8px 20px ${color}99`;
+      setTimeout(() => {
+        div.classList.remove('copied');
+        hexSpan.style.display = '';
+        hslSpan.style.display = '';
+        tooltip.removeChild(copiedEl);
+        div.style.boxShadow = '';
+      }, 1300);
+    });
+  });
+
+  div.addEventListener('mouseenter', () => { div.style.boxShadow = `0 8px 20px ${color}99`; });
+  div.addEventListener('mouseleave', () => { if (!div.classList.contains('copied')) div.style.boxShadow = ''; });
+
+  return div;
+}
+
+// =====================================================
+// HEX INPUT
+// =====================================================
+
+const hexInpEl = document.getElementById('hex-input');
+
+hexInpEl.addEventListener('focus', () => {
+  state.hexFocus = true;
+  hexInpEl.classList.remove('error');
+});
+
+hexInpEl.addEventListener('blur', () => {
+  state.hexFocus = false;
+  state.hexErr = false;
+  hexInpEl.classList.remove('error');
+  updateUI();
+});
+
+hexInpEl.addEventListener('input', () => {
+  let raw = hexInpEl.value.trim();
+  if (!raw.startsWith('#')) raw = '#' + raw;
+  const parsed = hexToRgb(raw);
+  if (parsed) {
+    state.r = parsed.r; state.g = parsed.g; state.b = parsed.b;
+    rgbRef.r = parsed.r; rgbRef.g = parsed.g; rgbRef.b = parsed.b;
+    state.hexErr = false;
+    hexInpEl.classList.remove('error');
+    updateUI();
+  } else {
+    state.hexErr = true;
+    hexInpEl.classList.add('error');
+  }
+});
+
+// =====================================================
+// BUTTON ACTIONS
+// =====================================================
+
+document.getElementById('info-hex').addEventListener('click', () => {
+  const hex = rgbToHex(state.r,state.g,state.b);
+  copyToClipboard(hex.toUpperCase(), `${hex.toUpperCase()} copied!`);
+});
+
+document.getElementById('info-rgb').addEventListener('click', () => {
+  const val = `rgb(${state.r}, ${state.g}, ${state.b})`;
+  copyToClipboard(val, `${val} copied!`);
+});
+
+document.getElementById('primary-swatch').addEventListener('click', () => {
+  const hex = rgbToHex(state.r,state.g,state.b);
+  copyToClipboard(hex.toUpperCase(), `${hex.toUpperCase()} copied!`);
+});
+
+document.getElementById('btn-rand').addEventListener('click', () => {
+  state.r = Math.floor(Math.random()*256);
+  state.g = Math.floor(Math.random()*256);
+  state.b = Math.floor(Math.random()*256);
+  rgbRef.r=state.r; rgbRef.g=state.g; rgbRef.b=state.b;
+  updateUI();
+});
+
+document.getElementById('btn-css').addEventListener('click', () => {
+  const hex = rgbToHex(state.r,state.g,state.b);
+  const pal = makePalette(state.r,state.g,state.b);
+  const lines = [
+    ':root {',
+    `  --color-primary: ${hex};`,
+    `  --color-comp: ${pal.complementary[0]};`,
+    `  --color-analog-1: ${pal.analogous[0]};`,
+    `  --color-analog-2: ${pal.analogous[1]};`,
+    `  --color-triadic-1: ${pal.triadic[0]};`,
+    `  --color-triadic-2: ${pal.triadic[1]};`,
+    `  --color-split-1: ${pal.splitComp[0]};`,
+    `  --color-split-2: ${pal.splitComp[1]};`,
+    `  --color-tetrad-1: ${pal.tetradic[0]};`,
+    `  --color-tetrad-2: ${pal.tetradic[1]};`,
+    `  --color-tetrad-3: ${pal.tetradic[2]};`,
+    ...pal.monochromatic.map((c,i) => `  --color-mono-${i+1}: ${c};`),
+    '}',
+  ].join('\n');
+  copyToClipboard(lines, 'CSS variables copied!');
+});
+
+document.getElementById('btn-png').addEventListener('click', () => {
+  const {r,g,b} = state;
+  const hex = rgbToHex(r,g,b);
+  const pal = makePalette(r,g,b);
+  const colorName = findColorName(r,g,b);
+  const lum = luminance(r,g,b);
+  const textColor = lum > 0.35 ? '#000000' : '#ffffff';
+
+  const oc = document.createElement('canvas');
+  oc.width=960; oc.height=280;
+  const oc2 = oc.getContext('2d');
+
+  oc2.fillStyle='#07070e'; oc2.fillRect(0,0,960,280);
+  oc2.fillStyle=hex; oc2.fillRect(20,20,150,110);
+
+  oc2.fillStyle=textColor;
+  oc2.font='bold 14px monospace'; oc2.fillText(hex.toUpperCase(),20,155);
+  oc2.font='11px monospace'; oc2.fillText(`rgb(${r}, ${g}, ${b})`,20,172);
+  oc2.fillText(colorName,20,189);
+
+  const swatches = [...pal.complementary,...pal.analogous,...pal.triadic,...pal.splitComp,...pal.tetradic,...pal.monochromatic].slice(0,12);
+  swatches.forEach((c,i) => {
+    const x = 190+i*62;
+    oc2.fillStyle=c; oc2.fillRect(x,20,58,80);
+    oc2.fillStyle='#555'; oc2.font='8px monospace'; oc2.fillText(c,x,115);
+  });
+
+  oc2.fillStyle='#1a1a28'; oc2.fillRect(0,240,960,40);
+  oc2.fillStyle='#444'; oc2.font='10px monospace'; oc2.fillText('RGB Colour Studio',20,262);
+
+  const a = document.createElement('a');
+  a.download=`palette-${hex.slice(1)}.png`;
+  a.href=oc.toDataURL('image/png');
+  a.click();
+});
+
+// =====================================================
+// INIT
+// =====================================================
+
+updateUI();
+</script>
+</body>
+</html>
