@@ -173,6 +173,47 @@
     .stat-value.pass-aaa { color: #4ade80; }
     .stat-value.pass-aa  { color: #a3e635; }
     .stat-value.pass-none { color: #f87171; }
+
+    .wcag-badges {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .wcag-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      border: 1px solid #333;
+      transition: border-color 0.1s;
+    }
+
+    .wcag-badge-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    .wcag-badge-threshold {
+      font-size: 0.6rem;
+      color: #555;
+    }
+
+    .wcag-badge-status {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 0.3rem;
+    }
+
+    .wcag-badge.pass { border-color: #166534; }
+    .wcag-badge.fail { border-color: #7f1d1d; }
+    .wcag-badge.pass .wcag-badge-status { color: #4ade80; }
+    .wcag-badge.fail  .wcag-badge-status { color: #f87171; }
   </style>
 </head>
 <body>
@@ -259,6 +300,23 @@
         </div>
       </div>
 
+      <!-- WCAG Compliance -->
+      <div class="card">
+        <div class="card-title">WCAG Compliance</div>
+        <div class="wcag-badges">
+          <div class="wcag-badge pass" id="wcag-normal">
+            <span class="wcag-badge-label">Normal Text</span>
+            <span class="wcag-badge-threshold">≥ 4.5:1 (AA)</span>
+            <span class="wcag-badge-status" id="wcag-normal-status">Pass</span>
+          </div>
+          <div class="wcag-badge pass" id="wcag-large">
+            <span class="wcag-badge-label">Large Text</span>
+            <span class="wcag-badge-threshold">≥ 3:1 (AA)</span>
+            <span class="wcag-badge-status" id="wcag-large-status">Pass</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -321,6 +379,17 @@
 
       document.getElementById('bg-lum').textContent = lBg.toFixed(4);
       document.getElementById('fg-lum').textContent = lFg.toFixed(4);
+
+      setWcag('wcag-normal', 'wcag-normal-status', ratio >= 4.5);
+      setWcag('wcag-large',  'wcag-large-status',  ratio >= 3);
+    }
+
+    function setWcag(badgeId, statusId, passes) {
+      const badge  = document.getElementById(badgeId);
+      const status = document.getElementById(statusId);
+      badge.classList.toggle('pass', passes);
+      badge.classList.toggle('fail', !passes);
+      status.textContent = passes ? 'Pass' : 'Fail';
     }
 
     // Wire up background channels
