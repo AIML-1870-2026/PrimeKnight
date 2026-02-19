@@ -47,14 +47,47 @@
       padding: 1rem 1.25rem;
     }
 
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: inherit;
+      font: inherit;
+    }
+
     .card-title {
       font-size: 0.75rem;
       font-weight: 600;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: #bbb;
-      margin-bottom: 0.85rem;
     }
+
+    .card-chevron {
+      color: #555;
+      flex-shrink: 0;
+      transition: transform 0.2s ease, color 0.1s;
+    }
+
+    .card-header:hover .card-chevron { color: #999; }
+
+    .card.collapsed .card-chevron { transform: rotate(-90deg); }
+
+    .card-body {
+      display: grid;
+      grid-template-rows: 1fr;
+      transition: grid-template-rows 0.2s ease;
+      overflow: hidden;
+    }
+
+    .card.collapsed .card-body { grid-template-rows: 0fr; }
+
+    .card-body-inner { min-height: 0; padding-top: 0.85rem; }
 
     .channel-row {
       display: grid;
@@ -318,59 +351,78 @@
 
       <!-- Background Color -->
       <div class="card">
-        <div class="card-title">Background Color</div>
-        <div class="channel-row">
-          <span class="channel-label">R</span>
-          <input type="range" min="0" max="255" value="255" id="bg-r-slider">
-          <input type="number" min="0" max="255" value="255" id="bg-r-num">
-        </div>
-        <div class="channel-row">
-          <span class="channel-label">G</span>
-          <input type="range" min="0" max="255" value="255" id="bg-g-slider">
-          <input type="number" min="0" max="255" value="255" id="bg-g-num">
-        </div>
-        <div class="channel-row">
-          <span class="channel-label">B</span>
-          <input type="range" min="0" max="255" value="255" id="bg-b-slider">
-          <input type="number" min="0" max="255" value="255" id="bg-b-num">
-        </div>
-        <div class="color-swatch" id="bg-swatch"></div>
+        <button class="card-header">
+          <span class="card-title">Background Color</span>
+          <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="card-body"><div class="card-body-inner">
+          <div class="channel-row">
+            <span class="channel-label">R</span>
+            <input type="range" min="0" max="255" value="255" id="bg-r-slider">
+            <input type="number" min="0" max="255" value="255" id="bg-r-num">
+          </div>
+          <div class="channel-row">
+            <span class="channel-label">G</span>
+            <input type="range" min="0" max="255" value="255" id="bg-g-slider">
+            <input type="number" min="0" max="255" value="255" id="bg-g-num">
+          </div>
+          <div class="channel-row">
+            <span class="channel-label">B</span>
+            <input type="range" min="0" max="255" value="255" id="bg-b-slider">
+            <input type="number" min="0" max="255" value="255" id="bg-b-num">
+          </div>
+          <div class="color-swatch" id="bg-swatch"></div>
+        </div></div>
       </div>
 
       <!-- Text Color -->
       <div class="card">
-        <div class="card-title">Text Color</div>
-        <div class="channel-row">
-          <span class="channel-label">R</span>
-          <input type="range" min="0" max="255" value="0" id="fg-r-slider">
-          <input type="number" min="0" max="255" value="0" id="fg-r-num">
-        </div>
-        <div class="channel-row">
-          <span class="channel-label">G</span>
-          <input type="range" min="0" max="255" value="0" id="fg-g-slider">
-          <input type="number" min="0" max="255" value="0" id="fg-g-num">
-        </div>
-        <div class="channel-row">
-          <span class="channel-label">B</span>
-          <input type="range" min="0" max="255" value="0" id="fg-b-slider">
-          <input type="number" min="0" max="255" value="0" id="fg-b-num">
-        </div>
-        <div class="color-swatch" id="fg-swatch"></div>
+        <button class="card-header">
+          <span class="card-title">Text Color</span>
+          <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="card-body"><div class="card-body-inner">
+          <div class="channel-row">
+            <span class="channel-label">R</span>
+            <input type="range" min="0" max="255" value="0" id="fg-r-slider">
+            <input type="number" min="0" max="255" value="0" id="fg-r-num">
+          </div>
+          <div class="channel-row">
+            <span class="channel-label">G</span>
+            <input type="range" min="0" max="255" value="0" id="fg-g-slider">
+            <input type="number" min="0" max="255" value="0" id="fg-g-num">
+          </div>
+          <div class="channel-row">
+            <span class="channel-label">B</span>
+            <input type="range" min="0" max="255" value="0" id="fg-b-slider">
+            <input type="number" min="0" max="255" value="0" id="fg-b-num">
+          </div>
+          <div class="color-swatch" id="fg-swatch"></div>
+        </div></div>
       </div>
 
       <!-- Font Size -->
       <div class="card">
-        <div class="card-title">Font Size</div>
-        <div class="channel-row">
-          <span class="channel-label">px</span>
-          <input type="range" min="8" max="72" value="18" id="size-slider">
-          <input type="number" min="8" max="72" value="18" id="size-num">
-        </div>
+        <button class="card-header">
+          <span class="card-title">Font Size</span>
+          <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="card-body"><div class="card-body-inner">
+          <div class="channel-row">
+            <span class="channel-label">px</span>
+            <input type="range" min="8" max="72" value="18" id="size-slider">
+            <input type="number" min="8" max="72" value="18" id="size-num">
+          </div>
+        </div></div>
       </div>
 
       <!-- Vision Simulation -->
       <div class="card">
-        <div class="card-title">Color Vision Simulation</div>
+        <button class="card-header">
+          <span class="card-title">Color Vision Simulation</span>
+          <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="card-body"><div class="card-body-inner">
         <div class="vision-options">
           <label class="vision-option">
             <input type="radio" name="vision" value="normal" checked>
@@ -394,12 +446,18 @@
           </label>
         </div>
         <p class="lock-notice" id="lock-notice">Color controls are locked during simulation</p>
+        </div></div>
       </div>
 
       <!-- Presets -->
       <div class="card">
-        <div class="card-title">Presets</div>
-        <div id="preset-list"></div>
+        <button class="card-header">
+          <span class="card-title">Presets</span>
+          <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="card-body"><div class="card-body-inner">
+          <div id="preset-list"></div>
+        </div></div>
       </div>
 
     </div>
@@ -587,6 +645,11 @@
         <span class="preset-name">${p.label}</span>`;
       btn.addEventListener('click', () => applyPreset(p));
       presetList.appendChild(btn);
+    });
+
+    // Collapsible cards
+    document.querySelectorAll('.card-header').forEach(header => {
+      header.addEventListener('click', () => header.closest('.card').classList.toggle('collapsed'));
     });
 
     // Vision simulation
