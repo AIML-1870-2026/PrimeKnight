@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Readable Explorer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      gap: 2rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #fff;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 960px;
+    }
+
+    .controls-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+
+    .card-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 0.85rem;
+    }
+
+    .channel-row {
+      display: grid;
+      grid-template-columns: 14px 1fr 52px;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .channel-row:last-child { margin-bottom: 0; }
+
+    .channel-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #aaa;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: #444;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+      border: 2px solid #666;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: #e0e0e0;
+      font-size: 0.8rem;
+      font-family: inherit;
+      padding: 0.25rem 0.35rem;
+      text-align: center;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: #666;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .color-swatch {
+      width: 100%;
+      height: 24px;
+      border-radius: 5px;
+      margin-top: 0.75rem;
+      border: 1px solid #444;
+    }
+
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .display-area {
+      flex: 1;
+      border-radius: 10px;
+      padding: 2rem;
+      border: 1px solid #444;
+      min-height: 200px;
+      transition: background-color 0.05s, color 0.05s;
+      line-height: 1.7;
+    }
+
+    .stats-card {
+      background: #242424;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #666;
+    }
+
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-value.pass-aaa { color: #4ade80; }
+    .stat-value.pass-aa  { color: #a3e635; }
+    .stat-value.pass-none { color: #f87171; }
+  </style>
+</head>
+<body>
+
+  <h1>Readable Explorer</h1>
+
+  <div class="layout">
+    <div class="controls-panel">
+
+      <!-- Background Color -->
+      <div class="card">
+        <div class="card-title">Background Color</div>
+        <div class="channel-row">
+          <span class="channel-label">R</span>
+          <input type="range" min="0" max="255" value="255" id="bg-r-slider">
+          <input type="number" min="0" max="255" value="255" id="bg-r-num">
+        </div>
+        <div class="channel-row">
+          <span class="channel-label">G</span>
+          <input type="range" min="0" max="255" value="255" id="bg-g-slider">
+          <input type="number" min="0" max="255" value="255" id="bg-g-num">
+        </div>
+        <div class="channel-row">
+          <span class="channel-label">B</span>
+          <input type="range" min="0" max="255" value="255" id="bg-b-slider">
+          <input type="number" min="0" max="255" value="255" id="bg-b-num">
+        </div>
+        <div class="color-swatch" id="bg-swatch"></div>
+      </div>
+
+      <!-- Text Color -->
+      <div class="card">
+        <div class="card-title">Text Color</div>
+        <div class="channel-row">
+          <span class="channel-label">R</span>
+          <input type="range" min="0" max="255" value="0" id="fg-r-slider">
+          <input type="number" min="0" max="255" value="0" id="fg-r-num">
+        </div>
+        <div class="channel-row">
+          <span class="channel-label">G</span>
+          <input type="range" min="0" max="255" value="0" id="fg-g-slider">
+          <input type="number" min="0" max="255" value="0" id="fg-g-num">
+        </div>
+        <div class="channel-row">
+          <span class="channel-label">B</span>
+          <input type="range" min="0" max="255" value="0" id="fg-b-slider">
+          <input type="number" min="0" max="255" value="0" id="fg-b-num">
+        </div>
+        <div class="color-swatch" id="fg-swatch"></div>
+      </div>
+
+      <!-- Font Size -->
+      <div class="card">
+        <div class="card-title">Font Size</div>
+        <div class="channel-row">
+          <span class="channel-label" style="font-size:0.6rem">px</span>
+          <input type="range" min="8" max="72" value="18" id="size-slider">
+          <input type="number" min="8" max="72" value="18" id="size-num">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="right-panel">
+
+      <!-- Text Display Area -->
+      <div class="display-area" id="display">
+        The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump! The five boxing wizards jump quickly. Sphinx of black quartz, judge my vow.
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-card">
+        <div class="stat">
+          <span class="stat-label">Contrast Ratio</span>
+          <span class="stat-value" id="contrast-value">21.00:1</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">BG Luminance</span>
+          <span class="stat-value" id="bg-lum">1.0000</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">FG Luminance</span>
+          <span class="stat-value" id="fg-lum">0.0000</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    function toLinear(c) {
+      const s = c / 255;
+      return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    }
+
+    function luminance(r, g, b) {
+      return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    }
+
+    function contrastRatio(l1, l2) {
+      const lighter = Math.max(l1, l2);
+      const darker  = Math.min(l1, l2);
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    // State
+    const bg = { r: 255, g: 255, b: 255 };
+    const fg = { r: 0,   g: 0,   b: 0   };
+    let fontSize = 18;
+
+    function syncPair(slider, numInput, min, max, onChange) {
+      slider.addEventListener('input', () => {
+        const v = clamp(parseInt(slider.value, 10), min, max);
+        numInput.value = v;
+        onChange(v);
+      });
+      numInput.addEventListener('input', () => {
+        const raw = parseInt(numInput.value, 10);
+        if (isNaN(raw)) return;
+        const v = clamp(raw, min, max);
+        slider.value = v;
+        onChange(v);
+      });
+    }
+
+    function update() {
+      const display = document.getElementById('display');
+      display.style.backgroundColor = `rgb(${bg.r},${bg.g},${bg.b})`;
+      display.style.color = `rgb(${fg.r},${fg.g},${fg.b})`;
+      display.style.fontSize = fontSize + 'px';
+
+      document.getElementById('bg-swatch').style.backgroundColor = `rgb(${bg.r},${bg.g},${bg.b})`;
+      document.getElementById('fg-swatch').style.backgroundColor = `rgb(${fg.r},${fg.g},${fg.b})`;
+
+      const lBg = luminance(bg.r, bg.g, bg.b);
+      const lFg = luminance(fg.r, fg.g, fg.b);
+      const ratio = contrastRatio(lBg, lFg);
+
+      const contrastEl = document.getElementById('contrast-value');
+      contrastEl.textContent = ratio.toFixed(2) + ':1';
+      contrastEl.className = 'stat-value ' + (ratio >= 7 ? 'pass-aaa' : ratio >= 4.5 ? 'pass-aa' : 'pass-none');
+
+      document.getElementById('bg-lum').textContent = lBg.toFixed(4);
+      document.getElementById('fg-lum').textContent = lFg.toFixed(4);
+    }
+
+    // Wire up background channels
+    syncPair(document.getElementById('bg-r-slider'), document.getElementById('bg-r-num'), 0, 255, v => { bg.r = v; update(); });
+    syncPair(document.getElementById('bg-g-slider'), document.getElementById('bg-g-num'), 0, 255, v => { bg.g = v; update(); });
+    syncPair(document.getElementById('bg-b-slider'), document.getElementById('bg-b-num'), 0, 255, v => { bg.b = v; update(); });
+
+    // Wire up foreground channels
+    syncPair(document.getElementById('fg-r-slider'), document.getElementById('fg-r-num'), 0, 255, v => { fg.r = v; update(); });
+    syncPair(document.getElementById('fg-g-slider'), document.getElementById('fg-g-num'), 0, 255, v => { fg.g = v; update(); });
+    syncPair(document.getElementById('fg-b-slider'), document.getElementById('fg-b-num'), 0, 255, v => { fg.b = v; update(); });
+
+    // Wire up font size
+    syncPair(document.getElementById('size-slider'), document.getElementById('size-num'), 8, 72, v => { fontSize = v; update(); });
+
+    // Initial render
+    update();
+  </script>
+
+</body>
+</html>
