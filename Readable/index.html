@@ -256,6 +256,57 @@
     }
 
     .lock-notice.visible { display: block; }
+
+    .preset-group-label {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #666;
+      margin: 0.65rem 0 0.35rem;
+    }
+
+    .preset-group-label:first-child { margin-top: 0; }
+
+    .preset-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      background: none;
+      border: 1px solid #2e2e2e;
+      border-radius: 6px;
+      padding: 0.3rem 0.5rem;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.1s, background 0.1s;
+      margin-bottom: 0.3rem;
+    }
+
+    .preset-btn:last-child { margin-bottom: 0; }
+
+    .preset-btn:hover {
+      border-color: #555;
+      background: #2a2a2a;
+    }
+
+    .preset-swatch {
+      flex-shrink: 0;
+      width: 30px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      border: 1px solid rgba(128,128,128,0.2);
+    }
+
+    .preset-name {
+      font-size: 0.8rem;
+      color: #ccc;
+    }
   </style>
 </head>
 <body>
@@ -343,6 +394,12 @@
           </label>
         </div>
         <p class="lock-notice" id="lock-notice">Color controls are locked during simulation</p>
+      </div>
+
+      <!-- Presets -->
+      <div class="card">
+        <div class="card-title">Presets</div>
+        <div id="preset-list"></div>
       </div>
 
     </div>
@@ -477,6 +534,60 @@
 
     // Initial render
     update();
+
+    // Presets
+    const PRESETS = [
+      { group: 'High Contrast', label: 'Black on White',  bg: [255,255,255], fg: [0,0,0]       },
+      { group: 'High Contrast', label: 'White on Black',  bg: [0,0,0],       fg: [255,255,255] },
+      { group: 'Low Contrast',  label: 'Gray on White',   bg: [255,255,255], fg: [187,187,187] },
+      { group: 'Low Contrast',  label: 'Muted on Light',  bg: [240,240,245], fg: [185,190,200] },
+      { group: 'Web Schemes',   label: 'GitHub Dark',     bg: [13,17,23],    fg: [230,237,243] },
+      { group: 'Web Schemes',   label: 'Amber Terminal',  bg: [18,18,18],    fg: [255,176,0]   },
+      { group: 'Web Schemes',   label: 'Ocean Slate',     bg: [15,23,42],    fg: [148,163,184] },
+      { group: 'Web Schemes',   label: 'Warm Paper',      bg: [254,243,199], fg: [120,53,15]   },
+      { group: 'WCAG Fail',     label: 'Red on Green',    bg: [0,128,0],     fg: [255,0,0]     },
+      { group: 'WCAG Fail',     label: 'Yellow on White', bg: [255,255,255], fg: [220,205,0]   },
+      { group: 'WCAG Fail',     label: 'Blue on Purple',  bg: [102,0,153],   fg: [0,0,204]     },
+    ];
+
+    function applyPreset(p) {
+      [bg.r, bg.g, bg.b] = p.bg;
+      [fg.r, fg.g, fg.b] = p.fg;
+      const ids = [
+        ['bg-r', bg.r], ['bg-g', bg.g], ['bg-b', bg.b],
+        ['fg-r', fg.r], ['fg-g', fg.g], ['fg-b', fg.b],
+      ];
+      ids.forEach(([id, val]) => {
+        document.getElementById(id + '-slider').value = val;
+        document.getElementById(id + '-num').value   = val;
+      });
+      // Reset vision to normal when applying a preset
+      const normalRadio = document.querySelector('input[name="vision"][value="normal"]');
+      if (!normalRadio.checked) {
+        normalRadio.checked = true;
+        normalRadio.dispatchEvent(new Event('change'));
+      }
+      update();
+    }
+
+    const presetList = document.getElementById('preset-list');
+    let lastGroup = null;
+    PRESETS.forEach(p => {
+      if (p.group !== lastGroup) {
+        const lbl = document.createElement('div');
+        lbl.className = 'preset-group-label';
+        lbl.textContent = p.group;
+        presetList.appendChild(lbl);
+        lastGroup = p.group;
+      }
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn';
+      btn.innerHTML = `
+        <span class="preset-swatch" style="background:rgb(${p.bg});color:rgb(${p.fg})">Aa</span>
+        <span class="preset-name">${p.label}</span>`;
+      btn.addEventListener('click', () => applyPreset(p));
+      presetList.appendChild(btn);
+    });
 
     // Vision simulation
     const colorCards = [
