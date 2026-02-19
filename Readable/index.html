@@ -214,6 +214,48 @@
     .wcag-badge.fail { border-color: #7f1d1d; }
     .wcag-badge.pass .wcag-badge-status { color: #4ade80; }
     .wcag-badge.fail  .wcag-badge-status { color: #f87171; }
+
+    .vision-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .vision-option {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+    }
+
+    .vision-option input[type="radio"] {
+      accent-color: #aaa;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .vision-option-label {
+      font-size: 0.85rem;
+      color: #ddd;
+      cursor: pointer;
+    }
+
+    .controls-locked {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .lock-notice {
+      font-size: 0.7rem;
+      color: #888;
+      margin-top: 0.75rem;
+      display: none;
+      font-style: italic;
+    }
+
+    .lock-notice.visible { display: block; }
   </style>
 </head>
 <body>
@@ -273,6 +315,34 @@
           <input type="range" min="8" max="72" value="18" id="size-slider">
           <input type="number" min="8" max="72" value="18" id="size-num">
         </div>
+      </div>
+
+      <!-- Vision Simulation -->
+      <div class="card">
+        <div class="card-title">Color Vision Simulation</div>
+        <div class="vision-options">
+          <label class="vision-option">
+            <input type="radio" name="vision" value="normal" checked>
+            <span class="vision-option-label">Normal Vision</span>
+          </label>
+          <label class="vision-option">
+            <input type="radio" name="vision" value="protanopia">
+            <span class="vision-option-label">Protanopia (red-blind)</span>
+          </label>
+          <label class="vision-option">
+            <input type="radio" name="vision" value="deuteranopia">
+            <span class="vision-option-label">Deuteranopia (green-blind)</span>
+          </label>
+          <label class="vision-option">
+            <input type="radio" name="vision" value="tritanopia">
+            <span class="vision-option-label">Tritanopia (blue-blind)</span>
+          </label>
+          <label class="vision-option">
+            <input type="radio" name="vision" value="monochromacy">
+            <span class="vision-option-label">Monochromacy (no color)</span>
+          </label>
+        </div>
+        <p class="lock-notice" id="lock-notice">Color controls are locked during simulation</p>
       </div>
 
     </div>
@@ -407,7 +477,63 @@
 
     // Initial render
     update();
+
+    // Vision simulation
+    const colorCards = [
+      document.getElementById('bg-r-slider').closest('.card'),
+      document.getElementById('fg-r-slider').closest('.card'),
+    ];
+
+    document.querySelectorAll('input[name="vision"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const display = document.getElementById('display');
+        const notice  = document.getElementById('lock-notice');
+        if (radio.value === 'normal') {
+          display.style.filter = '';
+          colorCards.forEach(c => c.classList.remove('controls-locked'));
+          notice.classList.remove('visible');
+        } else {
+          display.style.filter = `url(#filter-${radio.value})`;
+          colorCards.forEach(c => c.classList.add('controls-locked'));
+          notice.classList.add('visible');
+        }
+      });
+    });
   </script>
+
+  <!-- Color blindness simulation filters -->
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+    <defs>
+      <filter id="filter-protanopia">
+        <feColorMatrix type="matrix" values="
+          0.567 0.433 0     0 0
+          0.558 0.442 0     0 0
+          0     0.242 0.758 0 0
+          0     0     0     1 0"/>
+      </filter>
+      <filter id="filter-deuteranopia">
+        <feColorMatrix type="matrix" values="
+          0.625 0.375 0   0 0
+          0.7   0.3   0   0 0
+          0     0.3   0.7 0 0
+          0     0     0   1 0"/>
+      </filter>
+      <filter id="filter-tritanopia">
+        <feColorMatrix type="matrix" values="
+          0.95  0.05  0     0 0
+          0     0.433 0.567 0 0
+          0     0.475 0.525 0 0
+          0     0     0     1 0"/>
+      </filter>
+      <filter id="filter-monochromacy">
+        <feColorMatrix type="matrix" values="
+          0.299 0.587 0.114 0 0
+          0.299 0.587 0.114 0 0
+          0.299 0.587 0.114 0 0
+          0     0     0     1 0"/>
+      </filter>
+    </defs>
+  </svg>
 
 </body>
 </html>
