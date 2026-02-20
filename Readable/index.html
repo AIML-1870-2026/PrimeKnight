@@ -19,12 +19,32 @@
       gap: 2rem;
     }
 
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
     h1 {
       font-size: 1.5rem;
       font-weight: 600;
       letter-spacing: 0.05em;
       color: #fff;
     }
+
+    .reset-btn {
+      background: none;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #888;
+      font-size: 0.75rem;
+      font-family: inherit;
+      padding: 0.3rem 0.75rem;
+      cursor: pointer;
+      transition: border-color 0.1s, color 0.1s;
+    }
+
+    .reset-btn:hover { border-color: #666; color: #ccc; }
 
     .layout {
       display: grid;
@@ -40,6 +60,7 @@
       gap: 1.25rem;
     }
 
+    /* ── Cards ── */
     .card {
       background: #242424;
       border: 1px solid #333;
@@ -75,7 +96,6 @@
     }
 
     .card-header:hover .card-chevron { color: #999; }
-
     .card.collapsed .card-chevron { transform: rotate(-90deg); }
 
     .card-body {
@@ -86,9 +106,9 @@
     }
 
     .card.collapsed .card-body { grid-template-rows: 0fr; }
-
     .card-body-inner { min-height: 0; padding-top: 0.85rem; }
 
+    /* ── RGB sliders ── */
     .channel-row {
       display: grid;
       grid-template-columns: 14px 1fr 52px;
@@ -139,27 +159,85 @@
       outline: none;
     }
 
-    input[type="number"]:focus {
-      border-color: #666;
-    }
+    input[type="number"]:focus { border-color: #666; }
 
     input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-    }
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
+    /* ── Color swatch + hex + picker ── */
     .color-swatch {
       width: 100%;
-      height: 24px;
+      height: 20px;
       border-radius: 5px;
       margin-top: 0.75rem;
       border: 1px solid #444;
     }
 
+    .color-input-row {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+      align-items: center;
+    }
+
+    .hex-input {
+      flex: 1;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: #f0f0f0;
+      font-size: 0.8rem;
+      font-family: 'Courier New', monospace;
+      padding: 0.25rem 0.5rem;
+      outline: none;
+    }
+
+    .hex-input:focus { border-color: #666; }
+
+    .native-picker {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 34px;
+      height: 28px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      cursor: pointer;
+      background: none;
+      padding: 2px;
+      flex-shrink: 0;
+    }
+
+    .native-picker::-webkit-color-swatch-wrapper { padding: 0; }
+    .native-picker::-webkit-color-swatch { border: none; border-radius: 3px; }
+
+    /* ── Font selector ── */
+    .font-select {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 5px;
+      color: #f0f0f0;
+      font-size: 0.85rem;
+      font-family: inherit;
+      padding: 0.35rem 0.5rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .font-select:focus { border-color: #666; }
+
+    /* ── Right panel ── */
     .right-panel {
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+    }
+
+    .display-hint {
+      font-size: 0.65rem;
+      color: #555;
+      letter-spacing: 0.05em;
+      margin-bottom: -0.5rem;
     }
 
     .display-area {
@@ -170,8 +248,12 @@
       min-height: 200px;
       transition: background-color 0.05s, color 0.05s;
       line-height: 1.7;
+      outline: none;
     }
 
+    .display-area:focus { border-color: #666; }
+
+    /* ── Stats ── */
     .stats-card {
       background: #242424;
       border: 1px solid #333;
@@ -182,11 +264,7 @@
       gap: 1rem;
     }
 
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
+    .stat { display: flex; flex-direction: column; gap: 0.3rem; }
 
     .stat-label {
       font-size: 0.7rem;
@@ -203,14 +281,16 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .stat-value.pass-aaa { color: #4ade80; }
-    .stat-value.pass-aa  { color: #a3e635; }
+    .stat-value.pass-aaa  { color: #4ade80; }
+    .stat-value.pass-aa   { color: #a3e635; }
     .stat-value.pass-none { color: #f87171; }
 
+    /* ── WCAG badges (2×2) ── */
     .wcag-badges {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      gap: 0.6rem;
+      margin-top: 0.85rem;
     }
 
     .wcag-badge {
@@ -219,13 +299,13 @@
       gap: 0.15rem;
       background: #1a1a1a;
       border-radius: 8px;
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.85rem;
       border: 1px solid #333;
       transition: border-color 0.1s;
     }
 
     .wcag-badge-label {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -233,14 +313,14 @@
     }
 
     .wcag-badge-threshold {
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       color: #888;
     }
 
     .wcag-badge-status {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      margin-top: 0.3rem;
+      margin-top: 0.25rem;
     }
 
     .wcag-badge.pass { border-color: #166534; }
@@ -248,18 +328,10 @@
     .wcag-badge.pass .wcag-badge-status { color: #4ade80; }
     .wcag-badge.fail  .wcag-badge-status { color: #f87171; }
 
-    .vision-options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-    }
+    /* ── Vision simulation ── */
+    .vision-options { display: flex; flex-direction: column; gap: 0.55rem; }
 
-    .vision-option {
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-      cursor: pointer;
-    }
+    .vision-option { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; }
 
     .vision-option input[type="radio"] {
       accent-color: #aaa;
@@ -269,16 +341,9 @@
       cursor: pointer;
     }
 
-    .vision-option-label {
-      font-size: 0.85rem;
-      color: #ddd;
-      cursor: pointer;
-    }
+    .vision-option-label { font-size: 0.85rem; color: #ddd; cursor: pointer; }
 
-    .controls-locked {
-      opacity: 0.35;
-      pointer-events: none;
-    }
+    .controls-locked { opacity: 0.35; pointer-events: none; }
 
     .lock-notice {
       font-size: 0.7rem;
@@ -290,6 +355,7 @@
 
     .lock-notice.visible { display: block; }
 
+    /* ── Presets ── */
     .preset-group-label {
       font-size: 0.62rem;
       font-weight: 600;
@@ -317,11 +383,7 @@
     }
 
     .preset-btn:last-child { margin-bottom: 0; }
-
-    .preset-btn:hover {
-      border-color: #555;
-      background: #2a2a2a;
-    }
+    .preset-btn:hover { border-color: #555; background: #2a2a2a; }
 
     .preset-swatch {
       flex-shrink: 0;
@@ -336,15 +398,22 @@
       border: 1px solid rgba(128,128,128,0.2);
     }
 
-    .preset-name {
-      font-size: 0.8rem;
-      color: #ccc;
+    .preset-name { font-size: 0.8rem; color: #ccc; flex: 1; }
+
+    .preset-ratio {
+      font-size: 0.72rem;
+      color: #666;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
 
-  <h1>Readable Explorer</h1>
+  <div class="header-row">
+    <h1>Readable Explorer</h1>
+    <button class="reset-btn" id="reset-btn">Reset</button>
+  </div>
 
   <div class="layout">
     <div class="controls-panel">
@@ -372,6 +441,10 @@
             <input type="number" min="0" max="255" value="255" id="bg-b-num">
           </div>
           <div class="color-swatch" id="bg-swatch"></div>
+          <div class="color-input-row">
+            <input type="text" class="hex-input" id="bg-hex" maxlength="7" placeholder="#ffffff" spellcheck="false">
+            <input type="color" class="native-picker" id="bg-picker" value="#ffffff">
+          </div>
         </div></div>
       </div>
 
@@ -398,6 +471,28 @@
             <input type="number" min="0" max="255" value="0" id="fg-b-num">
           </div>
           <div class="color-swatch" id="fg-swatch"></div>
+          <div class="color-input-row">
+            <input type="text" class="hex-input" id="fg-hex" maxlength="7" placeholder="#000000" spellcheck="false">
+            <input type="color" class="native-picker" id="fg-picker" value="#000000">
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Font Family -->
+      <div class="card">
+        <button class="card-header">
+          <span class="card-title">Font Family</span>
+          <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="card-body"><div class="card-body-inner">
+          <select id="font-select" class="font-select">
+            <option value="system-ui, -apple-system, sans-serif">System UI</option>
+            <option value="Georgia, 'Times New Roman', serif">Georgia (Serif)</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="'Courier New', Courier, monospace">Courier New (Mono)</option>
+          </select>
         </div></div>
       </div>
 
@@ -423,29 +518,29 @@
           <svg class="card-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="card-body"><div class="card-body-inner">
-        <div class="vision-options">
-          <label class="vision-option">
-            <input type="radio" name="vision" value="normal" checked>
-            <span class="vision-option-label">Normal Vision</span>
-          </label>
-          <label class="vision-option">
-            <input type="radio" name="vision" value="protanopia">
-            <span class="vision-option-label">Protanopia (red-blind)</span>
-          </label>
-          <label class="vision-option">
-            <input type="radio" name="vision" value="deuteranopia">
-            <span class="vision-option-label">Deuteranopia (green-blind)</span>
-          </label>
-          <label class="vision-option">
-            <input type="radio" name="vision" value="tritanopia">
-            <span class="vision-option-label">Tritanopia (blue-blind)</span>
-          </label>
-          <label class="vision-option">
-            <input type="radio" name="vision" value="monochromacy">
-            <span class="vision-option-label">Monochromacy (no color)</span>
-          </label>
-        </div>
-        <p class="lock-notice" id="lock-notice">Color controls are locked during simulation</p>
+          <div class="vision-options">
+            <label class="vision-option">
+              <input type="radio" name="vision" value="normal" checked>
+              <span class="vision-option-label">Normal Vision</span>
+            </label>
+            <label class="vision-option">
+              <input type="radio" name="vision" value="protanopia">
+              <span class="vision-option-label">Protanopia (red-blind)</span>
+            </label>
+            <label class="vision-option">
+              <input type="radio" name="vision" value="deuteranopia">
+              <span class="vision-option-label">Deuteranopia (green-blind)</span>
+            </label>
+            <label class="vision-option">
+              <input type="radio" name="vision" value="tritanopia">
+              <span class="vision-option-label">Tritanopia (blue-blind)</span>
+            </label>
+            <label class="vision-option">
+              <input type="radio" name="vision" value="monochromacy">
+              <span class="vision-option-label">Monochromacy (no color)</span>
+            </label>
+          </div>
+          <p class="lock-notice" id="lock-notice">Color controls are locked during simulation</p>
         </div></div>
       </div>
 
@@ -464,10 +559,10 @@
 
     <div class="right-panel">
 
+      <p class="display-hint">Preview — click to edit text</p>
+
       <!-- Text Display Area -->
-      <div class="display-area" id="display">
-        The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump! The five boxing wizards jump quickly. Sphinx of black quartz, judge my vow.
-      </div>
+      <div class="display-area" id="display" contenteditable="true" spellcheck="false">The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump! The five boxing wizards jump quickly. Sphinx of black quartz, judge my vow.</div>
 
       <!-- Stats -->
       <div class="stats-card">
@@ -489,15 +584,25 @@
       <div class="card">
         <div class="card-title">WCAG Compliance</div>
         <div class="wcag-badges">
-          <div class="wcag-badge pass" id="wcag-normal">
-            <span class="wcag-badge-label">Normal Text</span>
-            <span class="wcag-badge-threshold">≥ 4.5:1 (AA)</span>
-            <span class="wcag-badge-status" id="wcag-normal-status">Pass</span>
+          <div class="wcag-badge pass" id="wcag-aa-normal">
+            <span class="wcag-badge-label">Normal AA</span>
+            <span class="wcag-badge-threshold">≥ 4.5:1</span>
+            <span class="wcag-badge-status" id="wcag-aa-normal-status">Pass</span>
           </div>
-          <div class="wcag-badge pass" id="wcag-large">
-            <span class="wcag-badge-label">Large Text</span>
-            <span class="wcag-badge-threshold">≥ 3:1 (AA)</span>
-            <span class="wcag-badge-status" id="wcag-large-status">Pass</span>
+          <div class="wcag-badge pass" id="wcag-aa-large">
+            <span class="wcag-badge-label">Large AA</span>
+            <span class="wcag-badge-threshold">≥ 3:1</span>
+            <span class="wcag-badge-status" id="wcag-aa-large-status">Pass</span>
+          </div>
+          <div class="wcag-badge pass" id="wcag-aaa-normal">
+            <span class="wcag-badge-label">Normal AAA</span>
+            <span class="wcag-badge-threshold">≥ 7:1</span>
+            <span class="wcag-badge-status" id="wcag-aaa-normal-status">Pass</span>
+          </div>
+          <div class="wcag-badge pass" id="wcag-aaa-large">
+            <span class="wcag-badge-label">Large AAA</span>
+            <span class="wcag-badge-threshold">≥ 4.5:1</span>
+            <span class="wcag-badge-status" id="wcag-aaa-large-status">Pass</span>
           </div>
         </div>
       </div>
@@ -506,9 +611,8 @@
   </div>
 
   <script>
-    function clamp(v, lo, hi) {
-      return Math.max(lo, Math.min(hi, v));
-    }
+    // ── Math helpers ──────────────────────────────────────────────────────────
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
     function toLinear(c) {
       const s = c / 255;
@@ -520,16 +624,27 @@
     }
 
     function contrastRatio(l1, l2) {
-      const lighter = Math.max(l1, l2);
-      const darker  = Math.min(l1, l2);
+      const lighter = Math.max(l1, l2), darker = Math.min(l1, l2);
       return (lighter + 0.05) / (darker + 0.05);
     }
 
-    // State
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function hexToRgb(hex) {
+      const h = hex.replace('#', '');
+      if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+      return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+    }
+
+    // ── State ─────────────────────────────────────────────────────────────────
     const bg = { r: 255, g: 255, b: 255 };
     const fg = { r: 0,   g: 0,   b: 0   };
-    let fontSize = 18;
+    let fontSize   = 18;
+    let fontFamily = 'system-ui, -apple-system, sans-serif';
 
+    // ── Sync helpers ──────────────────────────────────────────────────────────
     function syncPair(slider, numInput, min, max, onChange) {
       slider.addEventListener('input', () => {
         const v = clamp(parseInt(slider.value, 10), min, max);
@@ -545,17 +660,46 @@
       });
     }
 
+    function pushRgbToInputs(prefix, r, g, b) {
+      ['r','g','b'].forEach((ch, i) => {
+        const val = [r, g, b][i];
+        document.getElementById(`${prefix}-${ch}-slider`).value = val;
+        document.getElementById(`${prefix}-${ch}-num`).value   = val;
+      });
+    }
+
+    // ── URL state ─────────────────────────────────────────────────────────────
+    function pushState() {
+      const params = new URLSearchParams({
+        bg:   rgbToHex(bg.r, bg.g, bg.b).slice(1),
+        fg:   rgbToHex(fg.r, fg.g, fg.b).slice(1),
+        size: fontSize,
+        font: fontFamily,
+      });
+      history.replaceState(null, '', '?' + params.toString());
+    }
+
+    // ── Main update ───────────────────────────────────────────────────────────
     function update() {
       const display = document.getElementById('display');
       display.style.backgroundColor = `rgb(${bg.r},${bg.g},${bg.b})`;
-      display.style.color = `rgb(${fg.r},${fg.g},${fg.b})`;
-      display.style.fontSize = fontSize + 'px';
+      display.style.color           = `rgb(${fg.r},${fg.g},${fg.b})`;
+      display.style.fontSize        = fontSize + 'px';
+      display.style.fontFamily      = fontFamily;
 
       document.getElementById('bg-swatch').style.backgroundColor = `rgb(${bg.r},${bg.g},${bg.b})`;
       document.getElementById('fg-swatch').style.backgroundColor = `rgb(${fg.r},${fg.g},${fg.b})`;
 
-      const lBg = luminance(bg.r, bg.g, bg.b);
-      const lFg = luminance(fg.r, fg.g, fg.b);
+      // Hex + picker sync (skip if element is focused — user is mid-type)
+      const bgHex = document.getElementById('bg-hex');
+      const fgHex = document.getElementById('fg-hex');
+      if (document.activeElement !== bgHex) bgHex.value = rgbToHex(bg.r, bg.g, bg.b);
+      if (document.activeElement !== fgHex) fgHex.value = rgbToHex(fg.r, fg.g, fg.b);
+      document.getElementById('bg-picker').value = rgbToHex(bg.r, bg.g, bg.b);
+      document.getElementById('fg-picker').value = rgbToHex(fg.r, fg.g, fg.b);
+
+      const lBg  = luminance(bg.r, bg.g, bg.b);
+      const lFg  = luminance(fg.r, fg.g, fg.b);
       const ratio = contrastRatio(lBg, lFg);
 
       const contrastEl = document.getElementById('contrast-value');
@@ -565,8 +709,12 @@
       document.getElementById('bg-lum').textContent = lBg.toFixed(4);
       document.getElementById('fg-lum').textContent = lFg.toFixed(4);
 
-      setWcag('wcag-normal', 'wcag-normal-status', ratio >= 4.5);
-      setWcag('wcag-large',  'wcag-large-status',  ratio >= 3);
+      setWcag('wcag-aa-normal',  'wcag-aa-normal-status',  ratio >= 4.5);
+      setWcag('wcag-aa-large',   'wcag-aa-large-status',   ratio >= 3);
+      setWcag('wcag-aaa-normal', 'wcag-aaa-normal-status', ratio >= 7);
+      setWcag('wcag-aaa-large',  'wcag-aaa-large-status',  ratio >= 4.5);
+
+      pushState();
     }
 
     function setWcag(badgeId, statusId, passes) {
@@ -577,55 +725,94 @@
       status.textContent = passes ? 'Pass' : 'Fail';
     }
 
-    // Wire up background channels
+    // ── Apply helpers ─────────────────────────────────────────────────────────
+    function applyColors(bgR, bgG, bgB, fgR, fgG, fgB) {
+      [bg.r, bg.g, bg.b] = [bgR, bgG, bgB];
+      [fg.r, fg.g, fg.b] = [fgR, fgG, fgB];
+      pushRgbToInputs('bg', bg.r, bg.g, bg.b);
+      pushRgbToInputs('fg', fg.r, fg.g, fg.b);
+      update();
+    }
+
+    // ── Wire RGB sliders ──────────────────────────────────────────────────────
     syncPair(document.getElementById('bg-r-slider'), document.getElementById('bg-r-num'), 0, 255, v => { bg.r = v; update(); });
     syncPair(document.getElementById('bg-g-slider'), document.getElementById('bg-g-num'), 0, 255, v => { bg.g = v; update(); });
     syncPair(document.getElementById('bg-b-slider'), document.getElementById('bg-b-num'), 0, 255, v => { bg.b = v; update(); });
-
-    // Wire up foreground channels
     syncPair(document.getElementById('fg-r-slider'), document.getElementById('fg-r-num'), 0, 255, v => { fg.r = v; update(); });
     syncPair(document.getElementById('fg-g-slider'), document.getElementById('fg-g-num'), 0, 255, v => { fg.g = v; update(); });
     syncPair(document.getElementById('fg-b-slider'), document.getElementById('fg-b-num'), 0, 255, v => { fg.b = v; update(); });
 
-    // Wire up font size
+    // ── Wire hex inputs ───────────────────────────────────────────────────────
+    function wireHex(hexId, prefix, state) {
+      document.getElementById(hexId).addEventListener('input', function() {
+        const rgb = hexToRgb(this.value.trim());
+        if (!rgb) return;
+        [state.r, state.g, state.b] = rgb;
+        pushRgbToInputs(prefix, state.r, state.g, state.b);
+        update();
+      });
+    }
+
+    wireHex('bg-hex', 'bg', bg);
+    wireHex('fg-hex', 'fg', fg);
+
+    // ── Wire color pickers ────────────────────────────────────────────────────
+    function wirePicker(pickerId, prefix, state) {
+      document.getElementById(pickerId).addEventListener('input', function() {
+        const rgb = hexToRgb(this.value);
+        if (!rgb) return;
+        [state.r, state.g, state.b] = rgb;
+        pushRgbToInputs(prefix, state.r, state.g, state.b);
+        update();
+      });
+    }
+
+    wirePicker('bg-picker', 'bg', bg);
+    wirePicker('fg-picker', 'fg', fg);
+
+    // ── Wire font size ────────────────────────────────────────────────────────
     syncPair(document.getElementById('size-slider'), document.getElementById('size-num'), 8, 72, v => { fontSize = v; update(); });
 
-    // Initial render
-    update();
+    // ── Wire font family ──────────────────────────────────────────────────────
+    document.getElementById('font-select').addEventListener('change', function() {
+      fontFamily = this.value;
+      update();
+    });
 
-    // Presets
+    // ── Reset ─────────────────────────────────────────────────────────────────
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      const normalRadio = document.querySelector('input[name="vision"][value="normal"]');
+      if (!normalRadio.checked) { normalRadio.checked = true; normalRadio.dispatchEvent(new Event('change')); }
+      document.getElementById('size-slider').value = 18;
+      document.getElementById('size-num').value    = 18;
+      fontSize = 18;
+      document.getElementById('font-select').value = 'system-ui, -apple-system, sans-serif';
+      fontFamily = 'system-ui, -apple-system, sans-serif';
+      applyColors(255, 255, 255, 0, 0, 0);
+    });
+
+    // ── Presets ───────────────────────────────────────────────────────────────
     const PRESETS = [
-      { group: 'High Contrast', label: 'Black on White',  bg: [255,255,255], fg: [0,0,0]       },
-      { group: 'High Contrast', label: 'White on Black',  bg: [0,0,0],       fg: [255,255,255] },
-      { group: 'Low Contrast',  label: 'Gray on White',   bg: [255,255,255], fg: [187,187,187] },
-      { group: 'Low Contrast',  label: 'Muted on Light',  bg: [240,240,245], fg: [185,190,200] },
-      { group: 'Web Schemes',   label: 'GitHub Dark',     bg: [13,17,23],    fg: [230,237,243] },
-      { group: 'Web Schemes',   label: 'Amber Terminal',  bg: [18,18,18],    fg: [255,176,0]   },
-      { group: 'Web Schemes',   label: 'Ocean Slate',     bg: [15,23,42],    fg: [148,163,184] },
-      { group: 'Web Schemes',   label: 'Warm Paper',      bg: [254,243,199], fg: [120,53,15]   },
-      { group: 'WCAG Fail',     label: 'Red on Green',    bg: [0,128,0],     fg: [255,0,0]     },
-      { group: 'WCAG Fail',     label: 'Yellow on White', bg: [255,255,255], fg: [220,205,0]   },
-      { group: 'WCAG Fail',     label: 'Blue on Purple',  bg: [102,0,153],   fg: [0,0,204]     },
+      { group: 'High Contrast', label: 'Black on White',     bg: [255,255,255], fg: [0,0,0]       },
+      { group: 'High Contrast', label: 'White on Black',     bg: [0,0,0],       fg: [255,255,255] },
+      { group: 'High Contrast', label: 'High Contrast Dark', bg: [0,0,0],       fg: [255,255,0]   },
+      { group: 'Low Contrast',  label: 'Gray on White',      bg: [255,255,255], fg: [187,187,187] },
+      { group: 'Low Contrast',  label: 'Muted on Light',     bg: [240,240,245], fg: [185,190,200] },
+      { group: 'Web Schemes',   label: 'GitHub Dark',        bg: [13,17,23],    fg: [230,237,243] },
+      { group: 'Web Schemes',   label: 'Amber Terminal',     bg: [18,18,18],    fg: [255,176,0]   },
+      { group: 'Web Schemes',   label: 'Ocean Slate',        bg: [15,23,42],    fg: [148,163,184] },
+      { group: 'Web Schemes',   label: 'Warm Paper',         bg: [254,243,199], fg: [120,53,15]   },
+      { group: 'Web Schemes',   label: 'Solarized Dark',     bg: [0,43,54],     fg: [131,148,150] },
+      { group: 'Web Schemes',   label: 'Solarized Light',    bg: [253,246,227], fg: [101,123,131] },
+      { group: 'WCAG Fail',     label: 'Red on Green',       bg: [0,128,0],     fg: [255,0,0]     },
+      { group: 'WCAG Fail',     label: 'Yellow on White',    bg: [255,255,255], fg: [220,205,0]   },
+      { group: 'WCAG Fail',     label: 'Blue on Purple',     bg: [102,0,153],   fg: [0,0,204]     },
     ];
 
     function applyPreset(p) {
-      [bg.r, bg.g, bg.b] = p.bg;
-      [fg.r, fg.g, fg.b] = p.fg;
-      const ids = [
-        ['bg-r', bg.r], ['bg-g', bg.g], ['bg-b', bg.b],
-        ['fg-r', fg.r], ['fg-g', fg.g], ['fg-b', fg.b],
-      ];
-      ids.forEach(([id, val]) => {
-        document.getElementById(id + '-slider').value = val;
-        document.getElementById(id + '-num').value   = val;
-      });
-      // Reset vision to normal when applying a preset
       const normalRadio = document.querySelector('input[name="vision"][value="normal"]');
-      if (!normalRadio.checked) {
-        normalRadio.checked = true;
-        normalRadio.dispatchEvent(new Event('change'));
-      }
-      update();
+      if (!normalRadio.checked) { normalRadio.checked = true; normalRadio.dispatchEvent(new Event('change')); }
+      applyColors(...p.bg, ...p.fg);
     }
 
     const presetList = document.getElementById('preset-list');
@@ -638,21 +825,23 @@
         presetList.appendChild(lbl);
         lastGroup = p.group;
       }
+      const ratio = contrastRatio(luminance(...p.bg), luminance(...p.fg));
       const btn = document.createElement('button');
       btn.className = 'preset-btn';
       btn.innerHTML = `
         <span class="preset-swatch" style="background:rgb(${p.bg});color:rgb(${p.fg})">Aa</span>
-        <span class="preset-name">${p.label}</span>`;
+        <span class="preset-name">${p.label}</span>
+        <span class="preset-ratio">${ratio.toFixed(1)}:1</span>`;
       btn.addEventListener('click', () => applyPreset(p));
       presetList.appendChild(btn);
     });
 
-    // Collapsible cards
+    // ── Collapsible cards ─────────────────────────────────────────────────────
     document.querySelectorAll('.card-header').forEach(header => {
       header.addEventListener('click', () => header.closest('.card').classList.toggle('collapsed'));
     });
 
-    // Vision simulation
+    // ── Vision simulation ─────────────────────────────────────────────────────
     const colorCards = [
       document.getElementById('bg-r-slider').closest('.card'),
       document.getElementById('fg-r-slider').closest('.card'),
@@ -673,6 +862,29 @@
         }
       });
     });
+
+    // ── Init from URL ─────────────────────────────────────────────────────────
+    (function initFromUrl() {
+      const p = new URLSearchParams(location.search);
+      const urlBg   = p.get('bg');
+      const urlFg   = p.get('fg');
+      const urlSize = p.get('size');
+      const urlFont = p.get('font');
+
+      if (urlBg) { const rgb = hexToRgb('#' + urlBg); if (rgb) { [bg.r, bg.g, bg.b] = rgb; pushRgbToInputs('bg', bg.r, bg.g, bg.b); } }
+      if (urlFg) { const rgb = hexToRgb('#' + urlFg); if (rgb) { [fg.r, fg.g, fg.b] = rgb; pushRgbToInputs('fg', fg.r, fg.g, fg.b); } }
+      if (urlSize) {
+        const sz = clamp(parseInt(urlSize, 10), 8, 72);
+        if (!isNaN(sz)) { fontSize = sz; document.getElementById('size-slider').value = sz; document.getElementById('size-num').value = sz; }
+      }
+      if (urlFont) {
+        const sel = document.getElementById('font-select');
+        for (const opt of sel.options) { if (opt.value === urlFont) { sel.value = urlFont; fontFamily = urlFont; break; } }
+      }
+    })();
+
+    // ── Initial render ────────────────────────────────────────────────────────
+    update();
   </script>
 
   <!-- Color blindness simulation filters -->
